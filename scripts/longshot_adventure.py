@@ -8,6 +8,12 @@ from longshot_companions import entry
 
 PIN = entry("ootrr")["commit"]
 PRESETS = {"prudent": "First shuffled adventure", "ap_defaults": "Glitchless adventure", "everything": "Everything shuffled"}
+# Versioned, spoiler-free starting points shared by players using this generator.
+FEATURED = {
+    "Kokiri Trial": ("prudent", "Kokiri-Trial-01"),
+    "Hyrule Relay": ("ap_defaults", "Hyrule-Relay-01"),
+    "Lost Measure": ("everything", "Lost-Measure-01"),
+}
 
 
 def recipe(preset, seed):

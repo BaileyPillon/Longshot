@@ -967,6 +967,8 @@ static void read_input(uint64_t *buttons, int32_t stick[4]) {
     /* (hookshot) HOS_CONTROL: the control bridge's presses (host/control.c); one that asked to be exclusive keeps the
        player's devices out while it lasts */
     if (hos_control_input(buttons, stick)) return;
+    void hos_oot_autoload_input(void);
+    hos_oot_autoload_input();
     oc_notes();   /* (marks the note rows' inputs consumed before the pads and keys below are read) */
     /* A scripted run (a test) takes no input from the player's devices until 5 s after its last press (a variable
        left set in a shell no longer leaves the game without controls), and otherwise the pads count only

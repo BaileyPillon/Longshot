@@ -43,13 +43,13 @@ TARGETS = ("plain", "tensor", "tensor-emulate", "eden-tensor", "tensor-software"
 
 def translator_stamp(root=ROOT):
     """The sha1 half of HOOKSHOT_SHADER_STAMP, exactly as nx2/build.py:693-699 computes it: every file under
-    gpu/vk/{eden,sirit,compat} plus vk_shader.cpp, vk_bank.cpp, vk_state.h, vk_api.h, relative path + CRLF-
+    gpu/vk/{eden,sirit,compat} plus vk_shader.cpp, vk_bank.cpp, vk_state.h, relative path + CRLF-
     normalized bytes, sorted, first 16 hex. The cache stamp also mixes in sizeof(Shader::Info)/sizeof(Program),
     the library marker and RX_VK_*/EDEN_* env; bake_ds does that half (disk_stamp)."""
     vk = os.path.join(root, "gpu", "vk")
     files = [os.path.join(d, f) for top in ("eden", "sirit", "compat")
              for d, _, fs in os.walk(os.path.join(vk, top)) for f in fs]
-    files = sorted(files) + [os.path.join(vk, n) for n in ("vk_shader.cpp", "vk_bank.cpp", "vk_state.h", "vk_api.h")]
+    files = sorted(files) + [os.path.join(vk, n) for n in ("vk_shader.cpp", "vk_bank.cpp", "vk_state.h")]
     h = hashlib.sha1(usedforsecurity=False)
     for f in files:
         with open(f, "rb") as src:

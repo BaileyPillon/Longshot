@@ -32,6 +32,13 @@ class Party(unittest.TestCase):
             with self.assertRaises(ValueError):
                 party.server_plan(self.exe, "127.0.0.1", port, "secret")
 
+    def test_party_address_round_trip(self):
+        address = party.invite_endpoint("192.168.1.10", 27510)
+        self.assertEqual(party.read_invite(address), ("192.168.1.10", 27510))
+        for invalid in ("https://host:27510", "host:65536", "host:27510 secret", "host:0", "host"):
+            with self.assertRaises(ValueError):
+                party.read_invite(invalid)
+
     def test_tunic_is_private_overlay_not_pack_rewrite(self):
         pack = self.root / "mods/contents/0400486024DEC000/coop-puppet"
         (pack / "coop_self").mkdir(parents=True)

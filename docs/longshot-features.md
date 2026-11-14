@@ -120,12 +120,19 @@ The launcher's explicit `--user` selection takes precedence over the in-game pro
 
 ![Checkpoint captured and restored using synthetic saves](images/longshot-checkpoints.png)
 
-These are native-save checkpoints, not snapshots of live process memory or a pause-menu quicksave feature.
-The launcher does not establish arbitrary mid-combat restoration. Keep the checkpoint files local: they contain saves.
+**Play with tools** starts the checkpoint service. Open **Insert → Gameplay → Checkpoints** or press **F5** in-game.
+Save normally before choosing **Capture latest native save**. Capture and restore both restart the game after confirmation.
+Restore creates an unused profile and continues into that save. The browser can bind **Touchpad + D-pad** or
+**Create + D-pad** on DualSense. Up captures, Down selects the newest checkpoint, and Right opens the browser.
+Checkpoints preserve native save progress at the last save point. Keep the archives local because they contain saves.
 
-In **Manage mods**, use **Add mod folder** to copy an extracted RomFS mod into the game. It starts disabled.
+In **Manage mods**, use **Add mod folder** or **Add mod ZIP** to install a single RomFS layer. It starts disabled.
 Select it to review conflicts and enable it for the next launch. Existing mods with the same name are kept.
 Applying an older loadout disables newer mods it doesn't list. The preview shows this before you switch.
+
+With a rebuilt Longshot executable, **Continue save** starts the selected profile and advances to its native save.
+The **Skip title screen** gameplay option enables the same behavior on future launches. The launcher refuses Continue
+when the selected profile has no complete save. **Play Longshot** is available for new profiles.
 
 **This PC** reads CPU/RAM/GPU information and offers conservative starting points; it never changes game or Windows
 settings. NVIDIA VRAM comes from `nvidia-smi` where available, avoiding Windows' truncated 4 GiB adapter field.

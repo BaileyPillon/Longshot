@@ -8,6 +8,11 @@ import longshot_adventure as adventure
 
 
 class Recipes(unittest.TestCase):
+    def test_featured_challenges_round_trip(self):
+        for label, (preset, seed) in adventure.FEATURED.items():
+            with self.subTest(label=label):
+                self.assertEqual(adventure.from_code(adventure.share_code(preset, seed)), adventure.recipe(preset, seed))
+
     def test_roundtrip_all_reviewed_presets(self):
         for preset in adventure.PRESETS:
             code = adventure.share_code(preset, "Longshot-2026")

@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import longshot_mod_import as importer
@@ -44,6 +45,41 @@ class ModImport(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ExeFS"):
             importer.install_folder(self.root, self.source)
         self.assertEqual(mods.scan(self.root), [])
+
+    def test_wrapped_zip_installs_disabled_and_ignores_readme(self):
+        archive = self.root.parent / "Pack.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            bundle.writestr("contents/0400486024DEC000/My Pack/romfs/texture/sample.bin", b"sample")
+            bundle.writestr("README.txt", b"notes")
+        self.assertEqual(importer.install_zip(self.root, archive), ("Pack", 1))
+        (layer,) = mods.scan(self.root)
+        self.assertEqual(layer["files"], ["texture/sample.bin"])
+        self.assertFalse(layer["enabled"])
+        self.assertFalse((self.root / "Pack" / "README.txt").exists())
+
+    def test_zip_rejects_foreign_title_id_and_ambiguous_parent_directories(self):
+        archive = self.root.parent / "Pack.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            bundle.writestr("contents/0100000000000000/romfs/file.bin", b"foreign")
+        with self.assertRaisesRegex(ValueError, "different game"):
+            importer.install_zip(self.root, archive)
+        with zipfile.ZipFile(archive, "w") as bundle:
+            bundle.writestr("romfs/Texture/first.bin", b"first")
+            bundle.writestr("romfs/texture/second.bin", b"second")
+        with self.assertRaisesRegex(ValueError, "Conflicting ZIP path"):
+            importer.install_zip(self.root, archive)
+        self.assertEqual(mods.scan(self.root), [])
+
+    def test_zip_rejects_escaping_destinations_and_multiple_layers(self):
+        archive = self.root.parent / "Pack.zip"
+        for extra in ("romfs/../outside.bin", "romfs/COM1.txt", "romfs/IMAGE.bin",
+                      "exefs/patch.ips", "other/romfs/b.bin", "RomFS/sub/b.bin"):
+            with self.subTest(extra=extra), zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("romfs/image.bin", b"image")
+                bundle.writestr(extra, b"bad")
+            with self.assertRaises(ValueError):
+                importer.install_zip(self.root, archive)
+            self.assertFalse((self.root / "Pack").exists())
 
 
 if __name__ == "__main__":

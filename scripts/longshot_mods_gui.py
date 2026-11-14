@@ -9,7 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import longshot_mods as mods
 import longshot_loadouts as loadouts
-from longshot_mod_import import install_folder
+from longshot_mod_import import install_folder, install_zip
 
 
 class Manager:
@@ -30,6 +30,8 @@ class Manager:
         ttk.Button(toolbar, text="Choose mods folder…", command=self.choose).pack(side="left")
         self.import_button = ttk.Button(toolbar, text="Add mod folder…", command=self.add_folder)
         self.import_button.pack(side="left", padx=(8, 0))
+        self.zip_button = ttk.Button(toolbar, text="Add mod ZIP…", command=self.add_zip)
+        self.zip_button.pack(side="left", padx=(8, 0))
         self.path_text = tk.StringVar(value="No folder selected")
         ttk.Label(toolbar, textvariable=self.path_text).pack(side="left", padx=12)
         presets = ttk.Frame(pane)
@@ -78,17 +80,25 @@ class Manager:
             self.refresh()
 
     def add_folder(self):
+        chosen = filedialog.askdirectory(title="Choose a mod folder containing romfs", parent=self.window)
+        if chosen:
+            self.install(install_folder, Path(chosen))
+
+    def add_zip(self):
+        chosen = filedialog.askopenfilename(title="Choose a RomFS mod ZIP", filetypes=[("Mod ZIP", "*.zip")], parent=self.window)
+        if chosen:
+            self.install(install_zip, Path(chosen))
+
+    def install(self, installer, source):
         if not self.folder:
             messagebox.showinfo("Choose a mods folder", "Select your Longshot mods directory first.", parent=self.window)
             return
-        chosen = filedialog.askdirectory(title="Choose an extracted mod folder containing romfs", parent=self.window)
-        if not chosen:
-            return
         root = self.folder
-        self.import_button.configure(state="disabled")
+        for button in (self.import_button, self.zip_button):
+            button.configure(state="disabled")
         self.status.set("Checking and copying the mod. It will start disabled.")
         pool = ThreadPoolExecutor(max_workers=1)
-        future = pool.submit(install_folder, root, Path(chosen))
+        future = pool.submit(installer, root, source)
         pool.shutdown(wait=False)
         self.wait_for_import(future, root)
 
@@ -96,7 +106,8 @@ class Manager:
         if not future.done():
             self.window.after(150, self.wait_for_import, future, root)
             return
-        self.import_button.configure(state="normal")
+        for button in (self.import_button, self.zip_button):
+            button.configure(state="normal")
         try:
             name, count = future.result()
             if self.folder == root:
@@ -141,7 +152,7 @@ class Manager:
             self.path_text.set(str(self.folder))
             conflicts = mods.conflicts(self.layers)
             self.status.set(f"{len(self.layers)} mods · {sum(m['enabled'] for m in self.layers)} enabled · {len(conflicts)} overlapping files. The last enabled mod wins each overlap.")
-            self.show_details("Select a mod to see compatibility notes and which files overlap." if self.layers else "Use Add mod folder to import a folder containing romfs.")
+            self.show_details("Select a mod to see compatibility notes and which files overlap." if self.layers else "Add a mod folder or ZIP containing romfs.")
             if focus in self.tree.get_children():
                 self.tree.selection_set(focus)
                 self.tree.see(focus)

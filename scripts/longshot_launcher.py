@@ -57,6 +57,7 @@ class Launcher:
         self.selector.pack(side="left")
         self.selector.bind("<<ComboboxSelected>>", lambda _: self.refresh())
         self.button(row, "Play Longshot", self.play).pack(side="left", padx=16)
+        self.button(row, "Continue save", self.continue_save).pack(side="left", padx=(0, 8))
         self.button(row, "Play with journal", self.play_journal).pack(side="left")
         self.button(row, "Play with tools", self.play_tools).pack(side="left", padx=8)
         self.profile_text = tk.StringVar()
@@ -198,6 +199,10 @@ class Launcher:
     def play(self):
         self.require_game()
         self.child = core.start_game(self.game, int(self.profile.get()), self.romfs)
+
+    def continue_save(self):
+        game = self.require_game()
+        self.child = core.start_game(game, int(self.profile.get()), self.romfs, continue_save=True)
         self.journal_session = None
         self.status.set(f"Started Longshot with save profile {self.profile.get()}.")
 

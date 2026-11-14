@@ -141,7 +141,7 @@ def launch_plan(game, number=1, romfs=None):
     return [str(executable), str(image), "--romfs", str(assets), "--user", str(user)], env
 
 
-def start_game(game, number=1, romfs=None, *, journal_endpoint=None):
+def start_game(game, number=1, romfs=None, *, journal_endpoint=None, continue_save=False):
     closed_games()
     command, env = launch_plan(game, number, romfs)
     if journal_endpoint is not None:
@@ -156,6 +156,10 @@ def start_game(game, number=1, romfs=None, *, journal_endpoint=None):
     # Explicit --user bypasses native profile directory creation. Create all parents
     # before the game starts, including a profile's first-ever launch.
     user = profile_folder(game, number)
+    if continue_save:
+        if not (user / "save").is_dir() or not checkpoints.native_slots(user):
+            raise ValueError("This profile has no complete save yet. Choose Play Longshot to start a new game.")
+        env["HOS_SKIP_TITLE"] = "1"
     user.mkdir(parents=True, exist_ok=True)
     plain_path(user)
     return subprocess.Popen(command, cwd=game, env=env)

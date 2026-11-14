@@ -86,6 +86,7 @@ class Session:
         self.message = f"Profile {number}. Save in-game first. Checkpoints load into an unused profile."
         self.current = None
         self.identity = None
+        self.resume_checkpoint = False
         self.publish()
         self.launch()
         self.thread = threading.Thread(target=self.run, name="Longshot player tools", daemon=True)
@@ -94,6 +95,8 @@ class Session:
     def launch(self):
         command, env = core.launch_plan(self.game, self.number, self.romfs)
         env.update(HOS_CONTROL=self.endpoint, HOS_CONTROL_MEM="0", LONGSHOT_PLAYER_TOOLS_DIR=str(self.directory))
+        if self.resume_checkpoint:
+            env["HOS_SKIP_TITLE"] = "1"
         env.pop("HOS_INPUT_EXCLUSIVE", None)
         env.pop("HOS_INPUT_SCRIPT", None)
         user = core.profile_folder(self.game, self.number)
@@ -192,6 +195,7 @@ class Session:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 core.checkpoints.prepare(self.game, target, destination, exefs=self.exefs)
                 self.number = next_profile
+                self.resume_checkpoint = True
                 self.message = f"Restored {target.stem} into profile {next_profile}. Existing profiles are kept."
         except Exception:
             self.launch()  # A failed archive/restore resumes the original profile, never a partial destination.

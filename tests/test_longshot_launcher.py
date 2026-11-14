@@ -106,6 +106,20 @@ class LauncherTests(unittest.TestCase):
         self.assertNotIn("HOS_FS_OVERLAY", env)
         self.assertFalse(core.profile_folder(self.game, 2).exists())
 
+    def test_continue_requires_a_save_and_applies_only_to_its_child(self):
+        (self.game / ("hookshot.exe" if os.name == "nt" else "hookshot")).touch()
+        (self.game / "image.bin").touch()
+        (self.game / "romfs").mkdir()
+        with patch.object(core.subprocess, "Popen") as started, patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "no complete save"):
+                core.start_game(self.game, 2, continue_save=True)
+            started.assert_not_called()
+            core.import_save(self.source, self.game, 2)
+            core.start_game(self.game, 2, continue_save=True)
+            self.assertEqual(started.call_args.kwargs["env"]["HOS_SKIP_TITLE"], "1")
+            self.assertEqual(Path(started.call_args.args[0][-1]).resolve(), core.profile_folder(self.game, 2).resolve())
+            self.assertNotIn("HOS_SKIP_TITLE", os.environ)
+
     def test_invalid_profile_never_defaults_to_original(self):
         for number in (0, 10, "2", True):
             with self.assertRaises(ValueError):

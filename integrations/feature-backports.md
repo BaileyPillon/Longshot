@@ -63,3 +63,14 @@ are corroborated by Boomerang's MIT `data/save-mapping.json` at the pinned track
 not an imported checklist or source implementation. No Atlas code, dataset, art or analytics is included. Its README
 limits MIT to newly authored components and identifies an unlicensed inherited application base; the earlier short
 catalog description does not establish permission to bundle the whole app.
+
+## Continue save and shader cache preservation
+
+- The native **Skip title screen** implementation and fixture come from
+  [MagicBeanDev/Longshot ecb0f612](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/ecb0f612)
+  (mooki, with prior skip-title work credited upstream to Nicholas Gower). This fork integrates them with its
+  profile launcher, checkpoint service and input tests.
+- The renderer stamp change follows
+  [MagicBeanDev/Longshot 26a2eab0](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/26a2eab0)
+  (HumanBean). The standalone build and three offline bake paths use the same revised inputs.
+- ZIP mod import, the featured recipes and clipboard party addresses use this fork's existing launcher code.

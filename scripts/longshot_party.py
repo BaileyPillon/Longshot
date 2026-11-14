@@ -16,6 +16,21 @@ import longshot_launcher_core as core
 COLORS = ("green", "blue", "red", "purple", "cyan", "orange", "yellow", "pink", "white", "black")
 
 
+def invite_endpoint(address, port):
+    if (not re.fullmatch(r"[A-Za-z0-9._-]{1,253}", address)
+            or type(port) is not int or not 1 <= port <= 65535):
+        raise ValueError("Enter a host name or IPv4 address and a port from 1 to 65535")
+    return f"{address}:{port}"
+
+
+def read_invite(text):
+    address, separator, port = text.strip().partition(":")
+    if not separator or not re.fullmatch(r"[0-9]{1,5}", port):
+        raise ValueError("Paste a party address in host:port form")
+    invite_endpoint(address, int(port))
+    return address, int(port)
+
+
 def server_plan(executable, bind, port, password, *, pvp=False):
     executable = core.plain_path(executable, directory=False)
     if not executable.is_file():

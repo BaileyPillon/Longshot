@@ -5436,6 +5436,7 @@ void fill_replay_table(MkwVkRenderer& t) {
         if (id == HOS_OPT_STATUS_HUD) return photo::hud();
         if (id == HOS_OPT_DAMAGE_TAKEN) return menu_damage_taken();
         if (id == HOS_OPT_SKIP_OPENING) return opts.skip_opening;
+        if (id == HOS_OPT_SKIP_TITLE) return opts.skip_title != 0;
         if (id == HOS_OPT_HOLD_TOGGLE) return opts.hold_toggle;
         if (id == HOS_OPT_ITEM_WHEEL) return opts.item_wheel;
         if (id == HOS_OPT_QUICK_ACTION) return quick::take_action();

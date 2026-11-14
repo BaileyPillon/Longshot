@@ -93,6 +93,7 @@ void rx_option_set(int id, int value) {
     # time it hides the mouse by: not looked at)
     host_spies = """
 static void host_taps(void) {}
+void hos_oot_autoload_input(void) {}
 static void host_stick_read(int32_t stick[4]) { (void)stick; }
 static void host_drag_read(int32_t stick[4]) { (void)stick; }
 static void player_used(void) {}

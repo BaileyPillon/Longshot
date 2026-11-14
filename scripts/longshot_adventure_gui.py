@@ -12,8 +12,8 @@ def open_adventure(launcher):
     game = launcher.require_game()
     window = tk.Toplevel(launcher.window)
     window.title("Randomized adventure — Longshot")
-    window.geometry("650x470")
-    window.minsize(620, 450)
+    window.geometry("650x545")
+    window.minsize(620, 520)
     pane = ttk.Frame(window, padding=20)
     pane.pack(fill="both", expand=True)
     ttk.Label(pane, text="Randomized adventure", font=("Segoe UI", 18, "bold")).pack(anchor="w")
@@ -21,6 +21,18 @@ def open_adventure(launcher):
               wraplength=590).pack(anchor="w", pady=(8, 16))
     preset = tk.StringVar(value=adventure.PRESETS["prudent"])
     seed = tk.StringVar(value=secrets.token_hex(8))
+    featured = ttk.Combobox(pane, values=list(adventure.FEATURED), state="readonly", width=35)
+    featured.set("Choose a featured challenge…")
+    featured.pack(anchor="w", pady=(0, 12))
+
+    def choose_featured(_event):
+        style, value = adventure.FEATURED[featured.get()]
+        preset.set(adventure.PRESETS[style])
+        seed.set(value)
+        code.set(adventure.share_code(style, value))
+        status.set("Featured recipe loaded. Copy the code to share this setup with friends.")
+
+    featured.bind("<<ComboboxSelected>>", choose_featured)
     ttk.Label(pane, text="Adventure style").pack(anchor="w")
     ttk.Combobox(pane, textvariable=preset, values=list(adventure.PRESETS.values()), state="readonly", width=38).pack(anchor="w", pady=(4, 10))
     ttk.Label(pane, text="Seed").pack(anchor="w")

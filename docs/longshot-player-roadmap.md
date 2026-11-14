@@ -46,6 +46,25 @@ Rekarina appeared in a developer discussion without publicly reviewable source. 
 an item randomizer. A similarly named Reddit renderer announcement did not provide a verifiable source link.
 [Rekarina discussion](https://www.reddit.com/r/SwitchPirates2/comments/1xvo2jw/a_little_story_about_my_own_recompilation_rekarina/) · [Clawshot source](https://github.com/hiKareeem/Clawshot)
 
+## 14 November release refresh and implementation
+
+The refresh checked the earlier 49-repository shortlist against new pushes, public stars, local bookmarks and player
+threads. No relevant matches appeared in the checked personal stars or bookmarks. The ranking weighs player requests,
+how noticeable the changes are in play and what can be verified on the current branch.
+
+| Rank | Improvement | Current result |
+|---:|---|---|
+| 1 | Quick items, smart HUD and photo mode | Source for the wheel, favorites, contextual HUD and photo camera is on the branch. The item fixture passes. Equip, HUD transitions and camera controls still need gameplay acceptance. [Player QoL requests](https://www.reddit.com/r/zelda/comments/1xs0xds/oothd_possible_qol_features_to_patch_in/) |
+| 2 | Continue straight to a save and recover a checkpoint | Added **Continue save**, **Skip title screen** and automatic continuation from the checkpoint service's restored profile. Both paths reached gameplay using a copied Deku Tree save. [MagicBean skip-title change](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/ecb0f612) |
+| 3 | Install mod ZIPs and switch setups | Added direct single-layer RomFS ZIP import. New layers start disabled and appear in the conflict and loadout view. [Mako 4.1](https://github.com/Shakoquo/Mako/releases/tag/mako-4.1) · [NX2navi launcher](https://github.com/tangerineturtle1/NX2navi/blob/main/docs/launcher.md) |
+| 4 | Faster restarts and smoother travel | Removed the renderer API header from all four translator stamp producers. Menu-only edits now preserve cache identity. Older caches need one refresh. NX2navi's new preview also changes texture residency and fade transitions. Those policies need a same-route comparison on Longshot. [MagicBean cache change](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/26a2eab0) · [NX2navi v0.11.0-rc4](https://github.com/tangerineturtle1/NX2navi/releases/tag/v0.11.0-rc4) |
+| 5 | Featured randomizer challenges and shareable seeds | Added Kokiri Trial, Hyrule Relay and Lost Measure for the OoTrR 0.5.2 pin. Clawshot v0.2.1 provides examples of versioned settings and public seed recipes. [Clawshot v0.2.1](https://github.com/hiKareeem/Clawshot/releases/tag/v0.2.1) · [Clawshot discussion](https://www.reddit.com/r/OcarinaOfTime/comments/1xw8gey/clawshot_an_oot_remake_randomizer/) |
+| 6 | Easier parties and in-game multiplayer | Added clipboard address handoff to the launcher. Passwords are entered separately. Co-op 0.10.1's in-game Host/Join, protocol 11 and save synchronization depend on a different native build. The existing integration remains pinned pending a compatible port and two-client testing. [Co-op v0.10.1](https://github.com/daurosk/oot-remake-multiplayer/releases/tag/v0.10.1) · [Player co-op discussion](https://www.reddit.com/r/decomps/comments/1xuw3wk/ocarina_of_time_recomp_multiplayer/) |
+| 7 | Water, foliage and keyboard walking | Longshot contains shadow-table code and passes the descriptor-array fixture. Lichii's visual cases need side-by-side scene captures. A rebindable Walk key is available upstream and needs a port that preserves existing controls. [Lichii build 177](https://github.com/zortos293/Lichii/releases/tag/build-177) · [MagicBean Walk key](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/8c1844a9) |
+
+The [validation record](longshot-validation.md) covers what ran. The player threads establish individual
+requests and release reports. A community-wide preference could not be established from this sample.
+
 ## Atlas boundary discovered during implementation
 
 The reviewed [Atlas README](https://github.com/antonioalvromero/Ocarina-Atlas#license) explicitly licenses its newly

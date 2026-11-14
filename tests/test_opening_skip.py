@@ -178,7 +178,7 @@ def main():
     need("rx_option(HOS_OPT_SKIP_OPENING, 0)" in fn, "the option does not default off when the menu has not answered")
     need("HOS_OPT_SKIP_TITLE" not in fn and "44" not in fn, "the opening skip uses Skip title's id 44")
 
-    need("44 is reserved for HOS_OPT_SKIP_TITLE" in api, "option id 44 is no longer reserved for Skip title")
+    need("HOS_OPT_DISCORD, HOS_OPT_SKIP_TITLE" in api, "Skip title must keep option id 44")
     need(re.search(r"enum \{ HOS_OPT_SKIP_OPENING = 52 \};", api), "Skip opening is not option id 52")
     need("HOS_OPT_SKIP_OPENING = 44" not in api, "Skip opening took id 44")
     need("skip_opening" not in api, "Skip opening added to MkwVkHost or MkwVkRenderer (it is an option id, not an interface change)")

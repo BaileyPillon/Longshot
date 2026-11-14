@@ -95,7 +95,7 @@ def translator_stamp(vk_dir: str = None) -> str:
                   for d, _, fs in os.walk(os.path.join(vk, top)) for f in fs]
     names = sorted(translator) + [os.path.join(vk, n) for n in
                                   ("vk_shader.cpp", "vk_bank.cpp",
-                                   "vk_state.h", "vk_api.h")]
+                                   "vk_state.h")]
     for f in names:
         with open(f, "rb") as src:
             stamp.update(os.path.relpath(f, vk).replace("\\", "/").encode()

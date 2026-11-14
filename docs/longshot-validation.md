@@ -190,3 +190,21 @@ This was a functional check: **no clean 60 FPS claim**, pickup-animation gamepla
 
 Local evidence: `work/ranked-iteration/state-*.log`, `journal-full-tests.log`, `journal-protected-check.json`,
 and `work/longshot-performance/journal-functional-a/`. The game, its save data and raw live payloads remain ignored.
+
+## Continue, checkpoints and launcher additions, 14 November 2026
+
+- The updated native host and Vulkan library built successfully. **Continue save** loaded an isolated copy of
+  Deku Tree slot 03 with no external input. The host stopped sending start prompts when Link's update began.
+  The game exited normally and the source save's hashes matched.
+- A second run captured the copied native save through the checkpoint service, restored it into unused profile 2,
+  and reopened gameplay in the Deku Tree. The original profile's save files matched byte for byte. The service
+  persisted the configured shortcut over both restarts. The requests used the service protocol, so this run did
+  not exercise physical DualSense chords or the native confirmation buttons.
+- The launcher displayed **Continue save**. The actual Tk ZIP-import callback installed a synthetic layer in Off
+  state. Selecting Kokiri Trial produced its expected code on the clipboard. Party address copy and paste
+  round-tripped the hostname and port while leaving the password field alone.
+- All 25 focused checks passed. The skip-title fixture was also rerun with a UTF-8 Windows manifest and a
+  path containing accented and Japanese characters. The ZIP tests reject traversal, conflicting paths, ExeFS,
+  a foreign title ID and multiple layers. Cache checks exercise menu/API-only edits and translator edits.
+- The runtime had a 60 FPS cap with HDR and frame generation off. These were functional tests with a local
+  shader cache. A sustained gameplay performance comparison and multiplayer interoperability remain open.

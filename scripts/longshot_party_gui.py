@@ -1,7 +1,7 @@
 """Host or join a party with the pinned native co-op module."""
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 import longshot_party as party
 
@@ -12,8 +12,8 @@ class PartyWindow:
         self.server = None
         self.window = tk.Toplevel(launcher.window)
         self.window.title("Co-op party — Longshot")
-        self.window.geometry("670x640")
-        self.window.minsize(620, 600)
+        self.window.geometry("670x685")
+        self.window.minsize(620, 645)
         self.window.protocol("WM_DELETE_WINDOW", self.close)
         pane = ttk.Frame(self.window, padding=20)
         pane.pack(fill="both", expand=True)
@@ -55,7 +55,30 @@ class PartyWindow:
         self.host_button.pack(side="left")
         ttk.Button(row, text="Stop hosting", command=self.stop).pack(side="left", padx=8)
         ttk.Button(row, text="Join & play", command=lambda: launcher.guard(self.join)).pack(side="right")
+        row = ttk.Frame(pane)
+        row.pack(fill="x", pady=(0, 4))
+        ttk.Button(row, text="Copy party address", command=lambda: launcher.guard(self.copy_invite)).pack(side="left")
+        ttk.Button(row, text="Paste party address", command=lambda: launcher.guard(self.paste_invite)).pack(side="left", padx=8)
         self.poll()
+
+    def copy_invite(self):
+        address = self.values["address"].get().strip()
+        port = self.values["port"].get()
+        if self.server and self.server.bind == "0.0.0.0":
+            address = simpledialog.askstring("Party address", "Enter the LAN address friends use to reach this PC.", parent=self.window)
+            if address is None:
+                return
+            port = str(self.server.port)
+        invite = party.invite_endpoint(address, int(port))
+        self.window.clipboard_clear()
+        self.window.clipboard_append(invite)
+        self.status.set("Party address copied. Share the session password separately.")
+
+    def paste_invite(self):
+        address, port = party.read_invite(self.window.clipboard_get())
+        self.values["address"].set(address)
+        self.values["port"].set(str(port))
+        self.status.set("Party address loaded. Enter the session password before joining.")
 
     def choose_server(self):
         name = filedialog.askopenfilename(parent=self.window, title="Choose coop_server", filetypes=[("Server program", "*.exe"), ("All files", "*")])
