@@ -5,7 +5,11 @@ Updated 14 November 2026. This is the **new-feature queue** for BaileyPillon/Lon
 reopened community discussions and the user's requests. The order weighs visible impact, evidence of demand,
 fit with the existing fork and implementation risk. It is an editorial ranking, not a Reddit vote count.
 
-| Rank | Feature | What changes for the player | Demand evidence | Delivery boundary |
+## Initial ranking and rationale
+
+The table below records the original candidate assessment. Current implementation and validation status appears in the follow-up.
+
+| Rank | Feature | What changes for the player | Demand evidence | Initial delivery boundary |
 |---|---|---|---|---|
 | 1 | **Quick item wheel and D-pad favorites** | Choose weapons, bottles and boots quickly; keep camera control while running. | Multiple participants request a wheel, more item bindings and easier boot switching in the [QoL thread](https://www.reddit.com/r/zelda/comments/1xs0xds/oothd_possible_qol_features_to_patch_in/), alongside the [control discussion](https://www.reddit.com/r/OcarinaOfTime/comments/1xp7ph6/i_wish_they_hadnt_botwified_the_controls/). Strongest direct control requests in this sample; preferences differ. | New wheel and item-action backend remain to implement. Existing per-button hold toggles are already integrated and are not counted as a new wheel. Test consumable use, aiming, menus and controller conflicts. |
 | 2 | **Live Adventure Journal** | See the current area, live collection counters and pickup changes; mark places to revisit and follow a movement trail on a second screen. | [Boomerang](https://www.reddit.com/r/OcarinaOfTime/comments/1xtthaw/boomerang_tracker_a_save_progress_tracker_for_the/) and [Atlas](https://www.reddit.com/r/EmulationPiracy/comments/1xvpf5d/ocarina_atlas_live_companion_map_secondscreen/) independently implement completion assistance. This is convergent author interest with small discussions, not broad consensus. | First implementation: original local companion, per-profile waypoints, distance/direction, session trail and sampled counters. No copied Atlas base/art; no guess that a token count identifies a particular collectible. Illustrated maps and full live item identification remain separate work. |
