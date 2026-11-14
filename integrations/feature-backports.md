@@ -74,3 +74,7 @@ catalog description does not establish permission to bundle the whole app.
   [MagicBeanDev/Longshot 26a2eab0](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/26a2eab0)
   (HumanBean). The standalone build and three offline bake paths use the same revised inputs.
 - ZIP mod import, the featured recipes and clipboard party addresses use this fork's existing launcher code.
+- Keyboard walking follows
+  [MagicBeanDev/Longshot 8c1844a9](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/8c1844a9)
+  (mooki). The port uses this fork's options path and preserves its co-op key ownership, item-wheel inputs
+  and existing hold-toggle checks.

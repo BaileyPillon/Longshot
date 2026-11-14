@@ -744,6 +744,9 @@ const char* tx_damage_taken(int v) {
     return names[v >= 0 && v < 4 ? v : 1];
 }
 const char* tx_fov(int v) { return v == 100 ? "100% (original)" : tx_percent(v); }
+// (longshot) Walk mode: how the Walk key (the Controls page) makes Link walk with the movement keys (host/nn_hid.c walk_held)
+const char* tx_walk_mode(int v) { return v == 1 ? "Toggle" : "Hold"; }
+MENU_HINTS(hn_walk_mode, 0, "Link walks while the Walk key is held.", "One press of the Walk key walks, the next runs again.")
 const char* tx_prompts(int v) {
     static const char* t[HOS_PROMPT_N + 1] = {"Auto", "Switch", "Xbox", "PlayStation 4", "PlayStation 5", "Steam Deck",
                                               "Keyboard"};
@@ -1265,7 +1268,7 @@ Row rows[] = {
     {TAB_GAMEPLAY, "Favorite left", &opts.quick_left, 0, 32, 1, quick::item_name,
      "L3 + D-pad Left, or Shift + Left. Selects the item for the normal item button.", nullptr, false, true},
 
-    // Controls (12 rows; Motion opens the 6 TAB_MOTION rows, Controls its page with the 2 TAB_PAGE rows)
+    // Controls (Motion and Controls each open their own page)
     {TAB_CONTROLS, "Controller in background", &opts.pad_background, 0, 1, 1, tx_onoff,
      "Whether the controller plays the game while another window has the focus.", hn_background, false, true},
     {TAB_CONTROLS, "Mouse camera", &opts.mouse_native, 0, 1, 1, tx_mousecam, "How the captured mouse turns the camera.",
@@ -1316,6 +1319,10 @@ Row rows[] = {
     {TAB_PAGE, "Button prompts", &opts.prompts, 0, HOS_PROMPT_N, 1, tx_prompts,
      "The button icons the game shows, in its texts and menus: those of this controller, for the buttons your controls "
      "put each action on.", hn_prompts, true, true},
+    {TAB_CONTROLS, "Walk mode", &opts.walk_mode, 0, 1, 1, tx_walk_mode,
+     "Walk while holding the bound key, or tap it to switch between walking and running.", hn_walk_mode, false, true},
+    {TAB_CONTROLS, "Walk speed", &opts.walk_speed, 15, 90, 5, tx_percent,
+     "How far the movement keys tilt the left stick while walking. Gamepad movement is independent.", nullptr, false, true},
     {TAB_CONTROLS, "Controls", nullptr, 0, 0, 0, nullptr,   // (hookshot: opens its page)
      "The layout preset, the button prompts, and which gamepad button and which keys press each of the Switch's "
      "buttons."},
@@ -1754,7 +1761,7 @@ const char* ini_key(const Row& r) {
 const char* const bind_names[HOS_KEY_N] = {"a", "b", "x", "y", "ls", "rs", "l", "r", "zl", "zr", "plus", "minus",
                                            "left", "up", "right", "down", "move_up", "move_down", "move_left",
                                            "move_right", "cam_up", "cam_down", "cam_left", "cam_right",
-                                           "note_l", "note_r", "note_a", "note_y", "note_x"};
+                                           "note_l", "note_r", "note_a", "note_y", "note_x", "walk"};
 bool can_bind() { return host && host->binding && host->bind && host->pad_raw; }
 const char* tx_pad_layout(int v) {
     static const char* t[] = {"Nintendo (Def)", "Xbox / PC", "Swap Face", "Custom"};
@@ -2376,12 +2383,15 @@ const Control controls[] = {{HOS_SW_A, "A"}, {HOS_SW_B, "B"}, {HOS_SW_X, "X"}, {
                             {HOS_KEY_MOVE_DOWN, "Move back"}, {HOS_KEY_MOVE_LEFT, "Move left"},
                             {HOS_KEY_MOVE_RIGHT, "Move right"}, {HOS_KEY_CAM_UP, "Camera up"},
                             {HOS_KEY_CAM_DOWN, "Camera down"}, {HOS_KEY_CAM_LEFT, "Camera left"},
-                            {HOS_KEY_CAM_RIGHT, "Camera right"}, {HOS_KEY_OC_NOTE_L, "Ocarina note (L)"},
+                            {HOS_KEY_CAM_RIGHT, "Camera right"}, {HOS_KEY_WALK, "Walk"}, {HOS_KEY_OC_NOTE_L, "Ocarina note (L)"},
                             {HOS_KEY_OC_NOTE_R, "Ocarina note (R)"}, {HOS_KEY_OC_NOTE_A, "Ocarina note (A)"},
                             {HOS_KEY_OC_NOTE_Y, "Ocarina note (Y)"}, {HOS_KEY_OC_NOTE_X, "Ocarina note (X)"}};
 constexpr int kControls = sizeof controls / sizeof controls[0];   // (then "Reset to defaults")
-// (the stick's and camera's directions: keys only; the ocarina's note rows take a gamepad input too, host/nn_hid.c)
-bool keys_only(int i) { return i < kControls && controls[i].button >= HOS_KEY_MOVE_UP && controls[i].button <= HOS_KEY_CAM_RIGHT; }
+// (the stick's and camera's directions and Walk: keys only; the ocarina's note rows take a gamepad input too, host/nn_hid.c)
+bool keys_only(int i) {
+    return i < kControls && ((controls[i].button >= HOS_KEY_MOVE_UP && controls[i].button <= HOS_KEY_CAM_RIGHT) ||
+                             controls[i].button == HOS_KEY_WALK);
+}
 // a pad input's name on the controller of the button prompts (the Button prompts row's choice; Auto: the face in use),
 // else by its place
 const char* pad_name(int p) {

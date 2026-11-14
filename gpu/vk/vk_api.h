@@ -43,12 +43,12 @@ enum { HOS_OPT_PROMPTS = 46 };
    makes the scene buffer RGBA16F only then, so Native HDR with the row on Vanilla keeps the game's R11G11B10F and the
    temporal upscalers, which take only that scene) */
 enum { HOS_OPT_HDR_TONEMAP = 47 };
+/* Keyboard walking mode and percentage of full movement-stick tilt. */
+enum { HOS_OPT_WALK_MODE = 49, HOS_OPT_WALK_SPEED };
 /* Gameplay's vertical field of view, percent of the game's current angle; 100 is unchanged. */
-/* 49 and 50 are reserved for Walk mode and Walk speed (#2345). */
 enum { HOS_OPT_FOV = 51 };
 /* (HOS_OPT_SKIP_OPENING, 52: Gameplay's Skip opening, host/hos_main.c hos_oot_opening. Off. The new-game story movie
-   and Navi waking Link. 44 stays reserved for Skip title, 49 and 50 for Walk, 60 for the item wheel. A new option id
-   answered by the existing option callback does not change MkwVkHost or MkwVkRenderer.) */
+   and Navi waking Link.) */
 enum { HOS_OPT_SKIP_OPENING = 52 };
 /* Hold-to-toggle's enabled Switch buttons, 1 << HOS_SW_*. Off (zero) by default; the existing option callback. */
 enum { HOS_OPT_HOLD_TOGGLE = 54 };
@@ -79,12 +79,12 @@ enum { HOS_PROMPT_SWITCH, HOS_PROMPT_XBOX, HOS_PROMPT_PS4, HOS_PROMPT_PS5, HOS_P
    the textures (the ocarina's notes, the Talk ring's letters, the System page's controller), the layouts (the Talk ring's
    places, the ocarina hint's spacing), the icons in texts; the rest at the next start */
 enum { HOS_PROMPTS_LIVE_TEXTURES = 1, HOS_PROMPTS_LIVE_LAYOUTS = 2, HOS_PROMPTS_LIVE_TEXTS = 4, HOS_PROMPTS_LIVE_ALL = 7 };
-/* keys only (HOS_BIND_KEY), after the Switch's buttons: the left stick's and the camera's directions, and the
+/* keys only (HOS_BIND_KEY), after the Switch's buttons: the left stick's and the camera's directions, Walk, and the
    ocarina's five note controls (which take a gamepad input too, and share it: a note's key can be some other
    control's key at once, host/nn_hid.c has_pad) */
 enum { HOS_KEY_MOVE_UP = HOS_SW_N, HOS_KEY_MOVE_DOWN, HOS_KEY_MOVE_LEFT, HOS_KEY_MOVE_RIGHT, HOS_KEY_CAM_UP,
        HOS_KEY_CAM_DOWN, HOS_KEY_CAM_LEFT, HOS_KEY_CAM_RIGHT, HOS_KEY_OC_NOTE_L, HOS_KEY_OC_NOTE_R,
-       HOS_KEY_OC_NOTE_A, HOS_KEY_OC_NOTE_Y, HOS_KEY_OC_NOTE_X, HOS_KEY_N };
+       HOS_KEY_OC_NOTE_A, HOS_KEY_OC_NOTE_Y, HOS_KEY_OC_NOTE_X, HOS_KEY_WALK, HOS_KEY_N };
 
 /* (hookshot) the mouse over the window while it is free (not captured): the Insert menu's (host/display.c,
    host/posix/display_sdl.c). x and y: the cursor in the window's pixels, of a window width x height pixels (the

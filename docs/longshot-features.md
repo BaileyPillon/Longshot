@@ -27,6 +27,10 @@ and controller bindings, including DualSense bindings. All toggles start Off; Pl
 note rows cannot latch. Opening menus, losing focus or rebinding releases latched actions. Resetting controls also
 resets toggles. Enabling a toggle does not swap your physical button bindings.
 
+**Insert → Controls → Walk mode** lets keyboard players hold a key to walk or tap once to switch between walking
+and running. **Walk speed** sets the movement-key tilt from 15% to 90%, with 45% as the default. Rebind **Walk**
+on the Controls page. Caps Lock is the starting binding when available.
+
 **Insert → Debug → Debug tools On → Player → Damage taken** offers Half, Normal, Double and Quadruple damage.
 Normal is the default. Turning Debug tools off restores Normal behavior without forgetting the selected value.
 Healing is unaffected; Half rounds up to a quarter heart, and Heart protection takes precedence. This is a local
@@ -121,8 +125,8 @@ The launcher's explicit `--user` selection takes precedence over the in-game pro
 ![Checkpoint captured and restored using synthetic saves](images/longshot-checkpoints.png)
 
 **Play with tools** starts the checkpoint service. Open **Insert → Gameplay → Checkpoints** or press **F5** in-game.
-Save normally before choosing **Capture latest native save**. Capture and restore both restart the game after confirmation.
-Restore creates an unused profile and continues into that save. The browser can bind **Touchpad + D-pad** or
+Save normally before choosing **Capture latest native save**. It restarts into your current profile's save after confirmation.
+Restore restarts into an unused profile and continues into that save. The browser can bind **Touchpad + D-pad** or
 **Create + D-pad** on DualSense. Up captures, Down selects the newest checkpoint, and Right opens the browser.
 Checkpoints preserve native save progress at the last save point. Keep the archives local because they contain saves.
 

@@ -189,17 +189,17 @@ class Session:
                 stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
                 target = folder / f"profile-{self.number}-{stamp}-{secrets.token_hex(3)}.hsc"
                 core.checkpoints.capture(self.game, user, account, slot[5:], target, exefs=self.exefs)
-                self.message = "Captured " + target.stem + ". Load your native save to continue."
+                self.message = "Captured " + target.stem + f". Continuing profile {self.number}."
             else:
                 destination = core.profile_folder(self.game, next_profile)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 core.checkpoints.prepare(self.game, target, destination, exefs=self.exefs)
                 self.number = next_profile
-                self.resume_checkpoint = True
                 self.message = f"Restored {target.stem} into profile {next_profile}. Existing profiles are kept."
         except Exception:
             self.launch()  # A failed archive/restore resumes the original profile, never a partial destination.
             raise
+        self.resume_checkpoint = True
         self.scan()
         self.publish()
         self.launch()

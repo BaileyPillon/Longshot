@@ -11,13 +11,12 @@ with fakes for the clock, the option, the player and the tap it sends.
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
-
-RUN_ALL_ARGS = ["--cc", "gcc"]
 
 ROOT = Path(__file__).resolve().parents[1]
 MENU = ROOT / "gpu" / "vk" / "vk_menu.cpp"
@@ -145,12 +144,19 @@ def check_menu():
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--cc", default=os.environ.get("CC", "gcc"))
+    p.add_argument("--cc", default=os.environ.get("CC") or shutil.which("gcc") or shutil.which("clang"))
     a = p.parse_args()
+    if not a.cc:
+        raise SystemExit("Skip title fixture needs GCC or Clang")
     check_menu()
     with tempfile.TemporaryDirectory(prefix="skip-title-") as tmp:
         root = Path(tmp).resolve()
-        user = root / "Zélda ゲーム"
+        windows = os.name == "nt"
+        clang = "clang" in Path(a.cc).name.lower()
+        windres = shutil.which("windres") if windows and not clang else None
+        # The UTF-8 paths fixture separately checks the executable's manifest on Windows.
+        manifest = windows and (clang or windres)
+        user = root / ("Zélda ゲーム" if not windows or manifest else "user")
         profile = user / "save" / ("0" * 32)
         for slot, age in (("slot_00", 30), ("slot_01", 60), ("slot_02", 10)):
             d = profile / slot
@@ -163,16 +169,20 @@ def main():
         src = root / "skip_title_test.c"
         exe = root / "skip_title_test"
         src.write_text(HARNESS, encoding="utf-8")
-        windows = os.name == "nt"
         flags = subprocess.CREATE_NO_WINDOW | subprocess.BELOW_NORMAL_PRIORITY_CLASS if windows else 0
         extra = {"creationflags": flags} if windows else {}
         # Match the shipped Windows process code page, including argv, stat and FindFirstFileA.
-        resource = [win_manifest.write(str(root / "manifest.res"))] if windows else []
+        resource = [win_manifest.write(str(root / "manifest.res"))] if manifest else []
+        if windres:
+            obj = str(root / "manifest.o")
+            subprocess.run([windres, "-J", "res", "-O", "coff", resource[0], obj], check=True, **extra)
+            resource = [obj]
         build = subprocess.run([a.cc, "-std=c11", "-Wall", "-Wextra", "-Werror", "-D_CRT_SECURE_NO_WARNINGS",
                                 "-I", str(ROOT / "host"), "-I", str(ROOT / "gpu" / "vk"),
-                                str(src), str(AUTOLOAD), *resource, "-o", str(exe)], **extra)
+                                str(src), str(AUTOLOAD), *resource, "-o", str(exe)],
+                               capture_output=True, text=True, **extra)
         if build.returncode:
-            raise SystemExit("the host did not compile: see the compiler's output above")
+            raise SystemExit(build.stdout + build.stderr)
         run = subprocess.run([str(exe), str(user), str(empty / "user")], capture_output=True, text=True, **extra)
         print(run.stdout, end="")
         print(run.stderr, end="")

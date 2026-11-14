@@ -73,6 +73,14 @@ or file, is logged as he wrote it, within those limits.
 none, and `unavailable` means the loaded SDL lacks a required diagnostic call. A zero GUID is `unknown`.
 These queries do not change bindings, load a mapping file, or change which controllers are read.
 
+Keyboard walking is saved in `hookshot_options.ini`.
+
+| Key | Values |
+|---|---|
+| `walk_mode` | 0 Hold, 1 Toggle |
+| `walk_speed` | 15–90 percent of full stick tilt |
+| `key_walk` | Two virtual-key codes. The first defaults to Caps Lock when available. |
+
 ## Switches for testing and debugging
 
 The running game reads its switches from the environment or from `hookshot_env.txt` beside `image.bin` (one

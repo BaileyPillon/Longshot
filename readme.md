@@ -398,6 +398,8 @@ HDR, Detail, and GPU and memory (last: the rows to change when something is wron
 | | Layout preset | Nintendo (Def), Xbox / PC, Swap Face, Custom (on the Controls page) | Nintendo (Def) |
 | | Button prompts | Auto, Switch, Xbox, PlayStation 4, PlayStation 5, Steam Deck (on the Controls page) | Auto |
 | | Motion | Opens the Motion page: Motion controls (Off, On; On), Motion sensitivity X (10% to 600%) and Y (10% to 300%; 100%), Invert motion X and Y (Off, On; Off), Motion deadzone (Low, Standard, High; Standard) | |
+| | Walk mode | Hold, Toggle | Hold |
+| | Walk speed | 15% to 90%, in steps of 5 | 45% |
 | | Controls | Opens the Controls page | |
 | | Menu shortcut | Insert or F1; F1 only; Insert, F1 or Esc | Insert, F1 or Esc |
 | | Compact menu key | Right Shift, Right Ctrl | Right Shift |
@@ -562,6 +564,7 @@ HDR, Detail, and GPU and memory (last: the rows to change when something is wron
   Linux's Noto CJK where a game font lacks one.
 - **Discord status** shows "Playing Hookshot" and the time played in your Discord status. It is on by default and does
   nothing unless a Discord client is running on this PC; with the row Off nothing is sent to it.
+- Rebind `walk` on the Controls page. Caps Lock is the default when another binding is not using it.
 - **Controller in background:** On keeps the controller working while another window has the focus. The keyboard and
   mouse still need the game's window.
 - **Mouse camera:** Native turns the camera with the mouse one to one, as in a PC game. As the stick uses the mouse in
