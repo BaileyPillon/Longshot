@@ -51,6 +51,19 @@ class Loadouts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Files changed"):
             loadouts.preview(self.root, "Adventure")
 
+    def test_mods_added_after_capture_are_disabled_and_undoable(self):
+        self.save_and_change()
+        new_layer = self.root / "Later" / "romfs"
+        new_layer.mkdir(parents=True)
+        (new_layer / "overlap.txt").write_text("new mod")
+        plan = loadouts.preview(self.root, "Adventure")
+        self.assertEqual(plan["new_mods"], ["Later"])
+        self.assertEqual(plan["conflicts"][0]["winner"], "B")
+        loadouts.apply(self.root, "Adventure", plan["token"])
+        self.assertTrue((new_layer.parent / mods.MARKER).exists())
+        loadouts.recover(self.root, undo=True)
+        self.assertFalse((new_layer.parent / mods.MARKER).exists())
+
     def test_failure_rolls_back_and_crash_journal_recovers(self):
         plan = self.save_and_change()
         before = loadouts.file_state(self.root)

@@ -205,6 +205,8 @@ class Manager:
             listing = "\n".join(f"{'On' if m['enabled'] else 'Off'}   {m['name']}" for m in plan["layers"])
             overlaps = "\n".join(f"{c['path']} → {c['winner']}" for c in plan["conflicts"][:20])
             details = listing + f"\n\n{len(plan['conflicts'])} overlapping files. Last enabled layer wins."
+            if plan["new_mods"]:
+                details += f"\n{len(plan['new_mods'])} mods added since this loadout was saved will be turned off."
             if overlaps:
                 details += "\n" + overlaps
             self.show_details(details)

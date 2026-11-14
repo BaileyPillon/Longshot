@@ -125,6 +125,7 @@ The launcher does not establish arbitrary mid-combat restoration. Keep the check
 
 In **Manage mods**, use **Add mod folder** to copy an extracted RomFS mod into the game. It starts disabled.
 Select it to review conflicts and enable it for the next launch. Existing mods with the same name are kept.
+Applying an older loadout disables newer mods it doesn't list. The preview shows this before you switch.
 
 **This PC** reads CPU/RAM/GPU information and offers conservative starting points; it never changes game or Windows
 settings. NVIDIA VRAM comes from `nvidia-smi` where available, avoiding Windows' truncated 4 GiB adapter field.

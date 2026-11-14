@@ -101,8 +101,9 @@ def preview(root, name):
     found = {m["name"]: m for m in layers}
     if any(not isinstance(m, dict) or not isinstance(m.get("name"), str) or type(m.get("enabled")) is not bool for m in saved):
         raise ValueError("Invalid loadout entries")
-    if len(saved) != len(found) or {m["name"] for m in saved} != set(found):
-        raise ValueError("Installed mods changed. Save a new loadout after reviewing the mod list")
+    saved_names = {m["name"] for m in saved}
+    if len(saved) != len(saved_names) or not saved_names.issubset(found):
+        raise ValueError("Mods required by this loadout are missing. Review the installed mods before switching")
     planned = []
     for entry in saved:
         layer = dict(found[entry["name"]])
@@ -120,7 +121,10 @@ def preview(root, name):
                     raise ValueError("A loadout cannot enable a mod disabled by an enclosing folder")
         layer["enabled"] = entry["enabled"]
         planned.append(layer)
-    return {"layers": planned, "conflicts": mods.conflicts(planned), "token": token(layers)}
+    added = [dict(layer, enabled=False) for layer in layers if layer["name"] not in saved_names]
+    planned.extend(added)
+    return {"layers": planned, "conflicts": mods.conflicts(planned), "token": token(layers),
+            "new_mods": [layer["name"] for layer in added]}
 
 
 def file_state(root):
