@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--cc", default="gcc")
     args = parser.parse_args()
     api = (ROOT / "gpu/vk/vk_api.h").read_text(encoding="utf-8")
+    for header in ("longshot_items.h", "longshot_photo_options.h"):
+        api += "\n" + (ROOT / "gpu/vk" / header).read_text(encoding="utf-8")
     api = re.sub(r"/\*.*?\*/|//[^\n]*", "", api, flags=re.S)
     enums = re.findall(r"enum\s*\{[^}]*\}\s*;", api)
     declarations = [enum for enum in enums if "HOS_OPT_" in enum]

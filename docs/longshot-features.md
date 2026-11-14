@@ -71,6 +71,21 @@ bundled. Atlas's README documents separate terms for those parts; see the [resea
 The native sampler must be present in the experimental executable; build fingerprint `793ee543` was tested locally.
 This is functional companion validation, not evidence of a frame-rate improvement or full-game collectible accuracy.
 
+### Practice routes
+
+In the expanded Adventure Journal, pick **Kokiri to Market**, **Field to Kakariko**, or **Field to Market** and
+choose **Start practice route**. Timing starts with child Link in the first area. The journal records subsequent
+areas in order, using elapsed real time between received gameplay samples, including loads and pauses. Each profile
+keeps its six fastest attempts per route. Use **Reset** to abandon an attempt.
+
+### Quick items and a minimal HUD
+
+Turn on **Insert → Gameplay → Quick item wheel**, then open it with **F7** or **L3 + R3**. Pages contain
+items currently owned and usable by Link's age. Confirm to equip for the game's normal item button. In the wheel,
+**L3 + D-pad** or **Shift + arrow** assigns a favorite. The same chord selects it in play.
+After equipping two different items, **F4** or **L3 + L1** returns to the previously equipped item.
+The optional **Equipped item HUD** names the current quick item under the normal HUD controls and hides during photo mode.
+
 ## Live data for trackers and developer tools
 
 The optional local control bridge now supplies sampled Link position, facing/camera direction, health, rupees,

@@ -1256,9 +1256,12 @@ Row rows[] = {
     {TAB_GAMEPLAY, "Contextual status HUD", &opts.context_hud, 0, 1, 1, tx_onoff,
      "Hides the native status display during quiet exploration; shows it for four seconds after actions. "
      "Low health keeps it visible. F8 or Touchpad + R3 opens the photo camera; the world keeps running.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Equipped item HUD", &opts.equipped_hud, 0, 1, 1, tx_onoff,
+     "Show the currently equipped quick item during gameplay. Works with the contextual status HUD.", nullptr, false, true},
     {TAB_GAMEPLAY, "Quick item wheel", &opts.item_wheel, 0, 1, 1, tx_onoff,
      "F7 or L3 + R3 opens an owned-item wheel. Select with either stick, confirm to equip, back to cancel. "
-     "L1/R1 changes pages. L3 + D-pad selects a favorite; inside the wheel it assigns one. Keyboard: Shift + arrow.", nullptr, false, true},
+     "L1/R1 changes pages. L3 + D-pad selects a favorite and assigns it inside the wheel. "
+     "F4 or L3 + L1 returns to the previous item.", nullptr, false, true},
     {TAB_GAMEPLAY, "Favorite up", &opts.quick_up, 0, 32, 1, quick::item_name,
      "L3 + D-pad Up, or Shift + Up. Only owned items usable by this age can be selected.", nullptr, false, true},
     {TAB_GAMEPLAY, "Favorite right", &opts.quick_right, 0, 32, 1, quick::item_name,
@@ -4286,7 +4289,10 @@ std::recursive_mutex menu_mu;
 void menu_option_set(int id, int value) {
     if (id == HOS_OPT_PLAYER_READY) { photo::ready(value != 0); return; }
     if (id == HOS_OPT_HUD_ACTIVITY) { photo::activity(); return; }
-    if (id >= HOS_OPT_QUICK_OWNED && id <= HOS_OPT_QUICK_RIGHT) { quick::update(id, value); return; }
+    if ((id >= HOS_OPT_QUICK_OWNED && id <= HOS_OPT_QUICK_RIGHT) || id == HOS_OPT_QUICK_EQUIPPED) {
+        quick::update(id, value);
+        return;
+    }
     if (id == OOT_CHEAT_AGE_ID) {   // (Link's age: the Switch age row shows it)
         if (link_age.exchange(value, std::memory_order_relaxed) != value && page == 0 && cur_tab == TAB_DEBUG) menu_refresh = true;
         return;
@@ -4634,6 +4640,23 @@ void menu_tick() {
     if (host && host->binding)   // (A and B as bound now: the Controls page or the Layout preset can change them)
         menu_keys::confirm_back(host->binding(HOS_BIND_PAD, HOS_SW_A, 0), host->binding(HOS_BIND_PAD, HOS_SW_B, 0), &pad_confirm,
                                 &pad_back);
+    bool scripted_wheel = false, scripted_previous = false;
+    // Test the item wheel in headless screenshot runs.
+    if (static const char* next = env_on("HOS_HEADLESS") ? getenv("RX_VK_ITEM_SCRIPT") : nullptr; next) {
+        static const int64_t start = prof_now();
+        double at;
+        char command[16];
+        int used = 0;
+        if (sscanf(next, "%lf:%15[A-Z]%n", &at, command, &used) == 2 && (prof_now()-start)/1e9 >= at) {
+            scripted_wheel = !strcmp(command, "WHEEL");
+            scripted_previous = !strcmp(command, "PREVIOUS");
+            press[3] |= !strcmp(command, "LEFT");
+            press[4] |= !strcmp(command, "RIGHT");
+            press[7] |= !strcmp(command, "CONFIRM");
+            press[5] |= !strcmp(command, "BACK");
+            next = next[used] == ',' ? next + used + 1 : nullptr;
+        }
+    }
     static bool tools_cursor_open = false;
     if (!quick::visible() && !longshot::visible() && photo::tick(raw, mine, pad_back, press)) {
         if (open_now.exchange(false) || tools_cursor_open) {
@@ -4642,9 +4665,10 @@ void menu_tick() {
         }
         return;
     }
-    const bool tools_active = quick::visible() ? quick::tick(raw, mine, pad_confirm, pad_back, press) :
+    const bool tools_active = quick::visible() ? quick::tick(raw, mine, pad_confirm, pad_back, press, scripted_wheel, scripted_previous) :
         longshot::visible() ? longshot::tick(raw, mine, pad_confirm, pad_back, press) :
-        quick::tick(raw, mine, pad_confirm, pad_back, press) || longshot::tick(raw, mine, pad_confirm, pad_back, press);
+        quick::tick(raw, mine, pad_confirm, pad_back, press, scripted_wheel, scripted_previous) ||
+        longshot::tick(raw, mine, pad_confirm, pad_back, press);
     if (tools_active) {
         const bool was_open = open_now.load() || tools_cursor_open;
         open_now = false;
@@ -5069,7 +5093,8 @@ void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h) {
     const bool fps = opts.show_fps && !start && !photo::active();   // photos keep the saved counter setting
     const bool open = open_now.load(std::memory_order_relaxed);
     const bool coop = !start && coop::wanted();   // (co-op's chat lines and name tags: vk_coop.cpp)
-    if (!start && !fps && !open && !coop && !longshot::visible() && !quick::visible() && !photo::active()) {   // (nothing shows: no ImGui frame, no render pass)
+    const bool equipped = !start && !open && !photo::active() && quick::hud_visible();
+    if (!start && !fps && !open && !coop && !longshot::visible() && !quick::visible() && !photo::active() && !equipped) {
         // (but a new window size or Menu size since the last bake: one frame with nothing drawn that bakes the menu's glyphs
         // and measures its page for the new size, so the next open has no hitch whatever was resized while nothing showed)
         if (prebake_needed(w, h) && ui::begin(w, h)) {
@@ -5097,6 +5122,7 @@ void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h) {
     longshot::draw(c);
     quick::draw(c);
     photo::draw(c);
+    if (equipped) quick::draw_hud(c);
     if (fps) draw_fps(c, open);
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record(cmd, index, w, h);
@@ -5104,15 +5130,19 @@ void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h) {
 
 void menu_record_image(VkCommandBuffer cmd, VkImage image, VkImageView view, uint32_t w, uint32_t h) {
     const bool open = open_now.load(std::memory_order_relaxed);
-    const bool fps = opts.show_fps && !startup_on.load(std::memory_order_acquire);
-    const bool coop = !startup_on.load(std::memory_order_acquire) && coop::wanted();
-    if (!open && !fps && !coop && !longshot::visible() && !quick::visible()) return;
+    const bool start = startup_on.load(std::memory_order_acquire);
+    const bool fps = opts.show_fps && !start && !photo::active();
+    const bool coop = !start && coop::wanted();
+    const bool equipped = !start && !open && !photo::active() && quick::hud_visible();
+    if (!open && !fps && !coop && !longshot::visible() && !quick::visible() && !photo::active() && !equipped) return;
     if (!ui::begin(w, h)) return;
     ui::Ctx c = ui_ctx(w, h);
     if (coop) coop::draw(w, h);
     if (open) draw_menu(c);
     longshot::draw(c);
     quick::draw(c);
+    photo::draw(c);
+    if (equipped) quick::draw_hud(c);
     if (fps) draw_fps(c, open);
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record_to(cmd, image, view, w, h);

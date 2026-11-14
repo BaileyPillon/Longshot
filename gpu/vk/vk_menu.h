@@ -104,6 +104,7 @@ struct Options {
     int skip_title = 0;
     int item_wheel = 0;
     int context_hud = 0;
+    int equipped_hud = 0;
     int quick_up = 0, quick_right = 0, quick_down = 0, quick_left = 0;
     int save_profile = 1;   // Longshot: original saves (1), or separate playthroughs (2..9), after a restart
     int game_lang = 0;    // the game's language (vk_menu_i18n.h game_lang_code): language.txt's, not kept in the options file

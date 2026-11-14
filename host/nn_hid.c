@@ -816,6 +816,9 @@ static void pads_read(uint64_t *buttons, int32_t stick[4]) {
        keeps): they reach the game only one at a time */
     const uint64_t chord = 1ULL << HOS_PAD_BACK | 1ULL << HOS_PAD_START;
     if ((raw & chord) == chord) raw &= ~chord;
+    if ((raw & (1u << HOS_PAD_LSTICK)) && (raw & LONGSHOT_QUICK_CHORD_PARTS) &&
+        rx_option(HOS_OPT_ITEM_WHEEL, 0))
+        raw &= ~((1u << HOS_PAD_LSTICK) | LONGSHOT_QUICK_CHORD_PARTS);
     const uint64_t b = bound_pad_buttons(raw);
     cached_buttons = b;
     memcpy(cached_stick, s, sizeof s);
@@ -1051,8 +1054,6 @@ static void read_input(uint64_t *buttons, int32_t stick[4]) {
         if (rx_option(HOS_OPT_ITEM_WHEEL, 0)) {
             rx_option_set(HOS_OPT_QUICK_LEFT, (int)((uint16_t)ps[0] | (uint32_t)(uint16_t)ps[1] << 16));
             rx_option_set(HOS_OPT_QUICK_RIGHT, (int)((uint16_t)ps[2] | (uint32_t)(uint16_t)ps[3] << 16));
-            /* Both stick clicks open the wheel; never also pass their game bindings. */
-            if (pad_raw_now & (1u << HOS_PAD_LSTICK)) pb = 0;
         }
         if (rx_option(1, 0)) pad_after_menu = 1;
         else if (pad_after_menu && !pad_raw_now) pad_after_menu = 0;

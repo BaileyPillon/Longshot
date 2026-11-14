@@ -20,12 +20,18 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hookshot_ctl import Bridge, Failed
 from longshot_launcher_core import plain_path
+from longshot_mods import atomic_text
 
 TOKEN = "PouchData.Item_Token_Gold.StockNum"
 PIECES = "PouchData.Obj_Heart_Piece.StockNum"
 WATCH = [TOKEN, PIECES]
 MAX_PINS = 200
 STALE_SECONDS = 2.0
+PRACTICE_ROUTES = {
+    "Kokiri to Market": (("KokiriForest", "child"), ("HyruleField", "child"), ("Market", "child")),
+    "Field to Kakariko": (("HyruleField", "child"), ("KakarikoVillage", "child")),
+    "Field to Market": (("HyruleField", "child"), ("Market", "child")),
+}
 
 
 def number(value, minimum, maximum):
@@ -64,6 +70,63 @@ def sample_of(message):
 
 def area_name(scene):
     return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", scene).replace("_", " ")
+
+
+class PracticeRun:
+    """Time visits to an ordered list of areas from the local, read-only journal."""
+    def __init__(self, route):
+        self.route = route
+        self.started = None
+        self.splits = []
+        self.frame = None
+        self.cancelled = False
+
+    def observe(self, sample, received):
+        if self.cancelled or self.finished:
+            return
+        if self.frame is not None and sample["frame"] <= self.frame:
+            if sample["frame"] < self.frame:
+                self.cancelled = True
+            return
+        self.frame = sample["frame"]
+        scene = sample["map"].removesuffix("_Child").removesuffix("_Adult")
+        if (scene, sample["age"]) != self.route[len(self.splits)]:
+            return
+        if self.started is None:
+            self.started = received
+        self.splits.append(max(0, received - self.started))
+
+    @property
+    def finished(self):
+        return len(self.splits) == len(self.route)
+
+
+def record_practice(path, route, splits):
+    """Keep the six fastest completed attempts for this profile and route."""
+    path = plain_path(path, directory=False)
+    length = len(PRACTICE_ROUTES[route])
+    def valid(times):
+        return (isinstance(times, list) and len(times) == length and times[0] == 0
+                and all(number(t, 0, 86400) for t in times)
+                and times == sorted(times))
+    if not valid(splits):
+        raise ValueError("Practice result is outside the supported time range.")
+    data = {}
+    if path.exists():
+        if path.stat().st_size > 16384:
+            raise ValueError("Practice history exceeds 16 KiB.")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or set(data) - PRACTICE_ROUTES.keys():
+            raise ValueError("Unrecognized practice history.")
+    attempts = data.get(route, [])
+    if not isinstance(attempts, list) or len(attempts) > 6 or not all(map(valid, attempts)):
+        raise ValueError("Invalid saved attempts for this route.")
+    personal_best = min((times[-1] for times in attempts), default=None)
+    data[route] = sorted(attempts + [splits], key=lambda times: times[-1])[:6]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plain_path(path.parent)
+    atomic_text(path, json.dumps(data, indent=2) + "\n")
+    return personal_best
 
 
 class Journal:
@@ -250,6 +313,9 @@ class JournalWindow:
         self.window, self.journal = window, Journal()
         self.notes = Waypoints(notes)
         self.reader = Reader(endpoint)
+        self.practice_run = None
+        self.practice_result = None
+        self.practice_history = self.notes.path.with_name(self.notes.path.stem + "-practice.json")
         self.error = None
         self.after_id = None
         self.expanded_geometry = "970x710"
@@ -310,11 +376,55 @@ class JournalWindow:
         ttk.Label(self.details, text="This session", font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(18, 6))
         self.feed = tk.StringVar(value="Area visits and collection changes will appear here.")
         ttk.Label(self.details, textvariable=self.feed, justify="left", wraplength=870).pack(anchor="w")
-        ttk.Label(self.details, text="Waypoints are personal notes for this profile. Live counters do not mark individual collectible locations.",
-                  wraplength=880).pack(anchor="w", pady=(14, 0))
+        row = ttk.Frame(self.details)
+        row.pack(fill="x", pady=(12, 4))
+        self.practice_route = tk.StringVar(value=next(iter(PRACTICE_ROUTES)))
+        ttk.Combobox(row, textvariable=self.practice_route, values=tuple(PRACTICE_ROUTES),
+                     width=24, state="readonly").pack(side="left")
+        ttk.Button(row, text="Start practice route", command=self.start_practice).pack(side="left", padx=8)
+        ttk.Button(row, text="Reset", command=self.reset_practice).pack(side="left")
+        self.practice_text = tk.StringVar(value="Choose a route to record area splits.")
+        ttk.Label(self.details, textvariable=self.practice_text, wraplength=870).pack(anchor="w")
         if start_reader:
             self.reader.start()
         self.tick()
+
+    def start_practice(self):
+        self.practice_name = self.practice_route.get()
+        self.practice_run = PracticeRun(PRACTICE_ROUTES[self.practice_name])
+        self.practice_result = None
+        if self.journal.live():
+            self.practice_run.observe(self.journal.current, time.monotonic())
+        self.practice_status()
+
+    def reset_practice(self):
+        self.practice_run = None
+        self.practice_result = None
+        self.practice_text.set("Choose a route to record area splits.")
+
+    def practice_status(self):
+        run = self.practice_run
+        if run is None:
+            return
+        if run.cancelled:
+            self.practice_text.set("Game session ended. Start a new practice route after loading a save.")
+            return
+        splits = "   ".join(f"{area_name(scene)} {seconds:.1f}s"
+                            for (scene, _), seconds in zip(run.route, run.splits))
+        if run.finished:
+            if self.practice_result is None:
+                try:
+                    prior = record_practice(self.practice_history, self.practice_name, run.splits)
+                    self.practice_result = "New personal best" if prior is None or run.splits[-1] < prior else f"Personal best {prior:.1f}s"
+                except (OSError, ValueError) as error:
+                    self.practice_result = f"History unavailable: {error}"
+            self.practice_text.set(f"Finished in {run.splits[-1]:.1f}s · {self.practice_result} · {splits}")
+        elif run.started is None:
+            self.practice_text.set("Waiting for child Link in " + area_name(run.route[0][0]))
+        else:
+            elapsed = time.monotonic() - run.started
+            destination = area_name(run.route[len(run.splits)][0])
+            self.practice_text.set(f"{elapsed:.1f}s · Next: {destination} · {splits}")
 
     def toggle_compact(self):
         if self.compact.get():
@@ -424,11 +534,15 @@ class JournalWindow:
                 break
             if message.get("disconnected"):
                 self.journal.disconnect()
+                if self.practice_run and not self.practice_run.finished:
+                    self.practice_run.cancelled = True
             elif message.get("error"):
                 self.error = message["error"]
             else:
                 if self.journal.ingest(message, now=message["_received"]):
                     self.error = None
+                    if self.practice_run and time.monotonic() - message["_received"] <= STALE_SECONDS:
+                        self.practice_run.observe(self.journal.current, message["_received"])
         sample = self.journal.current
         live = self.journal.live()
         self.mark_button.configure(state="normal" if sample and self.journal.connected else "disabled")
@@ -450,6 +564,9 @@ class JournalWindow:
         if not self.compact.get():
             self.update_rows()
             self.draw()
+            self.practice_status()
+        if self.practice_run and self.practice_run.finished and self.practice_result is None:
+            self.practice_status()
         self.after_id = self.window.after(200, self.tick)
 
     def close(self):

@@ -378,7 +378,8 @@ HDR, Detail, and GPU and memory (last: the rows to change when something is wron
 | | Skip opening | Off, On (skips the new-game opening: the story movie and Navi waking Link; later cutscenes and the title screen stay) | Off |
 | | Save profile | 1 (original saves), or separate playthroughs 2 to 9; switch after saving and restarting | 1 |
 | | Contextual status HUD | Off, On; shows the status display after actions or during low health | Off |
-| | Quick item wheel | Off / On; F7 or L3 + R3 | Off |
+| | Equipped item HUD | Off / On; shows the equipped quick item | Off |
+| | Quick item wheel | Off / On; F7 or L3 + R3. Previous item: F4 or L3 + L1 | Off |
 | | Favorite up | None / an item; L3 + D-pad Up | None |
 | | Favorite right | None / an item; L3 + D-pad Right | None |
 | | Favorite down | None / an item; L3 + D-pad Down | None |

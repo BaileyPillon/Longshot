@@ -66,7 +66,13 @@ bool wanted() { return visible; }
 void draw(uint32_t w, uint32_t h) { CHECK(w == 640 && h == 360); calls += "c"; }
 }
 namespace longshot { bool visible() { return false; } void draw(ui::Ctx&) {} }
-namespace quick { bool visible() { return false; } void draw(ui::Ctx&) {} }
+namespace quick {
+bool show_hud = false;
+bool visible() { return false; }
+bool hud_visible() { return show_hud; }
+void draw(ui::Ctx&) {}
+void draw_hud(ui::Ctx&) { calls += "h"; }
+}
 namespace photo { bool active() { return false; } void draw(ui::Ctx&) {} }
 ''' + fn + r'''
 int main() {
@@ -95,6 +101,11 @@ int main() {
         want += "dr";   // (the recorder boundary right before the recording)
         CHECK(calls == want);
     }
+    startup_on = open_now = opts.show_fps = coop::visible = false;
+    can_draw = quick::show_hud = true;
+    calls.clear();
+    menu_record(1, 2, 640, 360);
+    CHECK(calls == "bphdr");
     std::printf("PASS: one ImGui frame and recording for whatever shows, in order, nothing while nothing shows\n");
 }
 '''

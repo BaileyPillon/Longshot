@@ -39,6 +39,8 @@ def main():
     helper += chr(10) + block(args.source.read_text(encoding='utf-8'), 'static uint64_t parse_cpu_list(')
     source = args.source.read_text(encoding='utf-8')
     reserved = block(source, 'uint64_t hos_reserved_cpus(void)')
+    assert "GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask)" in reserved
+    assert "!(info[i].ProcessorMask & ~process_mask)" in reserved
     linux = block(source, 'static uint64_t last_fastest_core(int *cores) {\n    *cores = 0;')
     assert '#elif !defined(__EMSCRIPTEN__)' in reserved and reserved.index('last_fastest_core(&cores)', reserved.index('#elif')) > 0, \
         'hos_reserved_cpus no longer asks last_fastest_core on Linux'

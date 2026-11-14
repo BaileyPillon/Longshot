@@ -42,23 +42,37 @@ static int quick_assign(Ctx *c, unsigned index, int child) {
     if (!capacity || capacity > 65536 || (recomp_load32(c, mgr + 0x280) & 0xfffff) >= capacity / 2) return 0;
     const Ctx saved = *c;
     c->x[0] = mgr; c->x[1] = quick_hash(quick_items[index].value);
-    c->x[2] = child ? 0xa0029837u : 0xbc32ce24u; c->x[30] = 0;
+    c->x[2] = child ? LONGSHOT_EQUIP_CHILD : LONGSHOT_EQUIP_ADULT; c->x[30] = 0;
     set(c);
     *c = saved;
     hos_log("longshot: selected owned %s for %s Link", quick_items[index].value, child ? "child" : "adult");
     return 1;
 }
+static int quick_equipped(int child) {
+    int hos_oot_enum_now(uint32_t hash, uint32_t *value);
+    uint32_t value;
+    if (!hos_oot_enum_now(child ? LONGSHOT_EQUIP_CHILD : LONGSHOT_EQUIP_ADULT, &value)) return 0;
+    for (unsigned i = 0; i < LONGSHOT_ITEM_COUNT; i++)
+        if (quick_hash(quick_items[i].value) == value) return (int)i + 1;
+    return 0;
+}
+
 static void quick_items_tick(Ctx *c, int64_t now) {
     int rx_option(int id, int otherwise); void rx_option_set(int id, int value);
     const int action = rx_option(HOS_OPT_QUICK_ACTION, 0);
-    if (!rx_option(HOS_OPT_ITEM_WHEEL, 0)) return;
-    int child = 1, loading = 1;
-    const int ready = oot_gamedata_bool(c, 0xcea220d3u, &child) &&
-        oot_gamedata_bool(c, 0xef2b60c2u, &loading) && !loading && !oot_event_playing(c);
-    if (action) rx_option_set(HOS_OPT_QUICK_RESULT, ready && quick_assign(c, (unsigned)(action-1), child) ? action : -1);
+    const int wheel = rx_option(HOS_OPT_ITEM_WHEEL, 0);
+    if (!wheel && !rx_option(HOS_OPT_EQUIPPED_HUD, 0)) return;
     static int64_t next;
     if (!action && now < next) return;
     next = now + 200000000LL;
+    int child = 1, loading = 1;
+    const int ready = oot_gamedata_bool(c, 0xcea220d3u, &child) &&
+        oot_gamedata_bool(c, 0xef2b60c2u, &loading) && !loading && !oot_event_playing(c);
+    if (action && wheel)
+        rx_option_set(HOS_OPT_QUICK_RESULT, ready && quick_assign(c, (unsigned)(action-1), child) ? action : -1);
+    const int equipped = ready ? quick_equipped(child) : 0;
+    rx_option_set(HOS_OPT_QUICK_EQUIPPED, child ? equipped : -equipped);
+    if (!wheel) return;
     uint32_t mask = 0;
     if (ready) for (unsigned i = 0; i < LONGSHOT_ITEM_COUNT; i++) if (quick_owned(c, i, child)) mask |= 1u << i;
     rx_option_set(HOS_OPT_QUICK_OWNED, (int)mask);

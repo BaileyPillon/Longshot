@@ -65,6 +65,20 @@ how noticeable the changes are in play and what can be verified on the current b
 The [validation record](longshot-validation.md) covers what ran. The player threads establish individual
 requests and release reports. A community-wide preference could not be established from this sample.
 
+## 14 November gameplay feature iteration
+
+The second refresh checked recently pushed repositories, the account's stars, local bookmarks, upstream commits,
+release notes, and independent remake player threads. The local bookmarks and account stars had no matching entries.
+The searchable sample is described in the [fork research](longshot-fork-research.md).
+
+| Rank | Feature | Status and evidence |
+|---:|---|---|
+| 1 | **Quick equipment with previous-item recall** | The wheel now pages only through owned items for the current age. F4 or L3 + L1 returns to the previously equipped item. The game retains its normal item-use button and restrictions. Direct multi-item activation needs a separate gameplay change. [Equip discussion](https://www.reddit.com/r/zelda/comments/1xqdww4/oothd_thoughts_about_the_new_item_equip_process/) · [C-button and wheel requests](https://www.reddit.com/r/zelda/comments/1xp1fhi/oothd_kokiri_why_for_the_love_godesses_why/) · [Ship of Harkinian](https://www.shipofharkinian.com/changelog) |
+| 2 | **Minimal HUD that remembers your equipment** | The equipped-item overlay has its own option. It reads the remake's current equipment and can be combined with the contextual status HUD. [Remake QoL requests](https://www.reddit.com/r/zelda/comments/1xs0xds/oothd_possible_qol_features_to_patch_in/) · [HUD and sprint requests](https://www.reddit.com/r/OcarinaOfTime/comments/1xr0vll/i_only_have_two_big_complaints_about_the_remake/) |
+| 3 | **Practice routes and personal bests** | The Adventure Journal now auto-splits three child routes on area arrival and saves completed times per profile. This is original work informed by practice-menu and autosplitter workflows. A boss-rush editor and safe-position visualization would require further game integration. [Sloperina 0.0.5](https://github.com/PracticeROM/sloperina/releases/tag/v0.0.5) · [LiveSplit](https://github.com/LiveSplit/LiveSplit) |
+| 4 | **Sprint while aiming the camera** | Players repeatedly ask for a hands-free sprint. Existing binding and hold-toggle controls cover a manually configured button, but automatic sprint still needs the game's own sprint/action state so it cannot interact with nearby objects or advance dialogue. [Remap discussion](https://www.reddit.com/r/zelda/comments/1xqtr1k/oothd_sprinting_while_moving_the_camera/) |
+| 5 | **Co-op story progression and smoother traversal** | Ported the replay-core affinity fallback fix for restricted CPU sets. Co-op v0.10.1 remains an ABI migration. NX2navi's preview and MagicBean's CPU-target option remain controlled comparison candidates. Frame generation stays off for this PC's prior flicker. [Co-op release](https://github.com/daurosk/oot-remake-multiplayer/releases/tag/v0.10.1) · [NX2navi preview](https://github.com/tangerineturtle1/NX2navi/releases/tag/v0.11.0-rc4) · [MagicBean CPU target](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/7ff5256e) |
+
 ## Atlas boundary discovered during implementation
 
 The reviewed [Atlas README](https://github.com/antonioalvromero/Ocarina-Atlas#license) explicitly licenses its newly

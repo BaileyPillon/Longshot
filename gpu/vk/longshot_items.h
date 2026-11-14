@@ -4,6 +4,11 @@
 /* Existing option channel, no renderer ABI or shader-cache stamp change. */
 enum { HOS_OPT_ITEM_WHEEL = 60, HOS_OPT_QUICK_ACTION, HOS_OPT_QUICK_OWNED,
        HOS_OPT_QUICK_RESULT, HOS_OPT_QUICK_LEFT, HOS_OPT_QUICK_RIGHT };
+enum { HOS_OPT_EQUIPPED_HUD = 70, HOS_OPT_QUICK_EQUIPPED };
+#define LONGSHOT_EQUIP_CHILD 0xa0029837u
+#define LONGSHOT_EQUIP_ADULT 0xbc32ce24u
+#define LONGSHOT_QUICK_CHORD_PARTS ((1u << HOS_PAD_RSTICK) | (1u << HOS_PAD_LSHOULDER) | \
+    (1u << HOS_PAD_UP) | (1u << HOS_PAD_RIGHT) | (1u << HOS_PAD_DOWN) | (1u << HOS_PAD_LEFT))
 #define LONGSHOT_ITEMS(X) \
  X("Slingshot", "SlingShot", "Weapon_Range_SlingShot", 1, 0) \
  X("Deku stick", "DekuStick", "Item_DekuStick", 1, 0) \

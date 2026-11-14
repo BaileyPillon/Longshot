@@ -21,6 +21,39 @@ def event(frame=1, **changes):
 
 
 class JournalTests(unittest.TestCase):
+    def test_practice_history_keeps_fastest_route_results(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "profile-2-practice.json"
+            name = "Field to Market"
+            self.assertIsNone(journal.record_practice(path, name, [0, 10]))
+            self.assertEqual(journal.record_practice(path, name, [0, 9]), 10)
+            self.assertEqual(journal.record_practice(path, name, [0, 11]), 9)
+            for seconds in range(12, 18):
+                self.assertEqual(journal.record_practice(path, name, [0, seconds]), 9)
+            self.assertEqual([r[-1] for r in json.loads(path.read_text())[name]], [9, 10, 11, 12, 13, 14])
+            with self.assertRaises(ValueError):
+                journal.record_practice(path, name, [0, -1])
+
+    def test_practice_routes_respect_order_age_and_session(self):
+        route = journal.PracticeRun(journal.PRACTICE_ROUTES["Kokiri to Market"])
+        def observe(frame, scene, received, age="child"):
+            route.observe({"frame": frame, "map": scene, "age": age}, received)
+        observe(1, "KokiriForest_Adult", 10, "adult")
+        self.assertIsNone(route.started)
+        observe(2, "KokiriForest_Child", 11)
+        observe(3, "Market_Child", 13)
+        observe(3, "HyruleField_Child", 14)
+        self.assertEqual(route.splits, [0])
+        observe(4, "HyruleField_Child", 15)
+        observe(5, "Market_Child", 17)
+        self.assertTrue(route.finished)
+        self.assertEqual(route.splits, [0, 4, 6])
+        route = journal.PracticeRun(journal.PRACTICE_ROUTES["Field to Kakariko"])
+        observe(7, "HyruleField_Child", 20)
+        observe(3, "KakarikoVillage_Child", 21)
+        self.assertTrue(route.cancelled)
+        self.assertFalse(route.finished)
+
     def test_unknown_fields_stay_unknown_and_invalid_samples_do_not_become_live(self):
         self.assertIsNone(journal.sample_of(event(loading=True)))
         self.assertIsNone(journal.sample_of(event(event=None)))

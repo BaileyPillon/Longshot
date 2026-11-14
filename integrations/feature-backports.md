@@ -78,3 +78,4 @@ catalog description does not establish permission to bundle the whole app.
   [MagicBeanDev/Longshot 8c1844a9](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/8c1844a9)
   (mooki). The port uses this fork's options path and preserves its co-op key ownership, item-wheel inputs
   and existing hold-toggle checks.
+- The replay fallback now honors process affinity, following [MagicBeanDev/Longshot 1be60eae](https://git.magicbean.dev/MagicBeanDev/Longshot/commit/1be60eae).

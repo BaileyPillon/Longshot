@@ -170,6 +170,14 @@ int hos_oot_health_now(void) {
     return state_number(mgr,KIND_INT,STATE_LIFE,&life) && life>=0 && life<=1000 ? (int)life : -1;
 }
 
+int hos_oot_enum_now(uint32_t hash, uint32_t *value) {
+    int64_t current;
+    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    if (!state_number(mgr, KIND_ENUM, hash, &current)) return 0;
+    *value = (uint32_t)current;
+    return 1;
+}
+
 /* ,"<key>":<number flag> or null */
 static void state_put_number(StateLine *l, uint64_t mgr, const char *key, int kind, uint32_t hash) {
     int64_t v;
