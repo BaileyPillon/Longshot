@@ -208,3 +208,19 @@ and `work/longshot-performance/journal-functional-a/`. The game, its save data a
   a foreign title ID and multiple layers. Cache checks exercise menu/API-only edits and translator edits.
 - The runtime had a 60 FPS cap with HDR and frame generation off. These were functional tests with a local
   shader cache. A sustained gameplay performance comparison and multiplayer interoperability remain open.
+
+## Quick equipment and practice routes, 14 November 2026
+
+- A private copied-save run reached the Deku Tree. Scripted wheel selection equipped Deku Nut and Slingshot,
+  then previous-item recall equipped Deku Nut again. The game's own inventory reported usable items and a live
+  enum watch confirmed the Slingshot switch. The native item indicator also showed the Slingshot in a capture.
+  The game exited normally and source-save hashes matched.
+- A new build's headless menu capture showed the optional **Deku stick** label alongside the game's matching
+  item icon. This verifies the HUD draws during gameplay. The capture run uses local screenshot recording
+  and is unsuitable for comparing frame rates.
+- The journal passed ordered route, age, rewind and personal-best history tests. Its Tk controls displayed all
+  three splits after simulated gameplay samples. The renderer and host fixtures cover owned-only selection,
+  an empty inventory, previous-item recall, enum lookup, HUD recording and the replay affinity fallback.
+- The Windows game build and all 13 applicable GitHub jobs passed for `10f68b20`. The later local rebuild
+  included the affinity fix. Frame generation and HDR stayed off in the copied-save tests.
+  All 19 tracked regular play files and 10 experimental profile files matched their baseline hashes.
