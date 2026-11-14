@@ -175,6 +175,10 @@ class Launcher:
             return
         user = core.profile_folder(self.game, int(self.profile.get()))
         self.profile_text.set(f"Profile {self.profile.get()} · {user}\n" + ("Existing profile." if user.exists() else "New playthrough: no progress in this profile yet."))
+        available = [str(number) for number in range(2, 10) if not core.profile_folder(self.game, number).exists()]
+        self.restore_selector.configure(values=available)
+        if self.restore_number.get() not in available:
+            self.restore_number.set(available[0] if available else "")
         if (user / "save").is_dir():
             for account, slots in core.checkpoints.native_slots(user).items():
                 for slot in slots:
@@ -290,7 +294,7 @@ class Launcher:
 
     def import_save(self):
         game = self.require_game()
-        number = int(self.restore_number.get())
+        number = self.restore_profile()
         if core.profile_folder(game, number).exists():
             raise ValueError(f"Profile {number} already exists. Select a new profile in Saves & checkpoints.")
         selected = filedialog.askdirectory(title=f"Import into profile {number}: choose the folder with account.sav and slot folders", parent=self.window)
@@ -316,7 +320,7 @@ class Launcher:
 
     def import_save_package(self):
         game = self.require_game()
-        number = int(self.restore_number.get())
+        number = self.restore_profile()
         core.closed_games()
         if core.profile_folder(game, number).exists():
             raise ValueError(f"Profile {number} already exists. Select an unused profile for import / restore.")
@@ -347,7 +351,7 @@ class Launcher:
         chosen = self.archives.selection()
         if not chosen:
             raise ValueError("Select a checkpoint to restore")
-        number = int(self.restore_number.get())
+        number = self.restore_profile()
         destination = core.profile_folder(game, number)
         destination.parent.mkdir(parents=True, exist_ok=True)
         path = game / "longshot-checkpoints" / chosen[0]
@@ -360,6 +364,12 @@ class Launcher:
             self.profile.set(str(number))
         self.refresh()
         self.status.set(message)
+
+    def restore_profile(self):
+        value = self.restore_number.get()
+        if not value:
+            raise ValueError("All eight additional profiles are in use. Choose a game folder with an unused profile.")
+        return int(value)
 
     def read_hardware(self):
         def show(info):
