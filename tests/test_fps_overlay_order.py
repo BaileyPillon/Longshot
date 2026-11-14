@@ -65,6 +65,9 @@ bool visible = false;
 bool wanted() { return visible; }
 void draw(uint32_t w, uint32_t h) { CHECK(w == 640 && h == 360); calls += "c"; }
 }
+namespace longshot { bool visible() { return false; } void draw(ui::Ctx&) {} }
+namespace quick { bool visible() { return false; } void draw(ui::Ctx&) {} }
+namespace photo { bool active() { return false; } void draw(ui::Ctx&) {} }
 ''' + fn + r'''
 int main() {
     for (bool multiplayer : {false, true}) for (bool startup : {false, true}) for (bool fps : {false, true}) for (bool menu : {false, true}) for (bool can : {true, false}) {

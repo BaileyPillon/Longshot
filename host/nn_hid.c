@@ -73,6 +73,8 @@ static void mouse_sens_save(void) {
    change it there. HOS_MOUSE_SENS still wins, and then - and = keep it in <user>/mouse_sens.txt as before. A value in
    mouse_sens.txt from before is moved into the menu once, while the menu's is still its default; the file is renamed
    mouse_sens.txt.moved then, so the menu's value is not replaced by it again at a later start */
+#include "../gpu/vk/longshot_items.h"
+#include "../gpu/vk/longshot_photo_options.h"
 void rx_option_set(int id, int value);
 static int sens_from_file;   /* (mouse_setup: <user>/mouse_sens.txt was there) */
 static void mouse_sens_keys(void) {
@@ -996,6 +998,12 @@ static void read_input(uint64_t *buttons, int32_t stick[4]) {
         uint64_t pb = 0;
         int32_t ps[4] = {0};
         pads_read(&pb, ps);
+        if (rx_option(HOS_OPT_ITEM_WHEEL, 0)) {
+            rx_option_set(HOS_OPT_QUICK_LEFT, (int)((uint16_t)ps[0] | (uint32_t)(uint16_t)ps[1] << 16));
+            rx_option_set(HOS_OPT_QUICK_RIGHT, (int)((uint16_t)ps[2] | (uint32_t)(uint16_t)ps[3] << 16));
+            /* Both stick clicks open the wheel; never also pass their game bindings. */
+            if (pad_raw_now & (1u << HOS_PAD_LSTICK)) pb = 0;
+        }
         if (rx_option(1, 0)) pad_after_menu = 1;
         else if (pad_after_menu && !pad_raw_now) pad_after_menu = 0;
         if (!pad_after_menu) {
@@ -1095,12 +1103,14 @@ static void npad_states(Ctx *c) {
         const uint64_t pause = buttons & ~toggles.previous & ((1ULL << B_PLUS) | (1ULL << B_MINUS));
         buttons = hold_toggle_apply(&toggles, buttons, enabled, reset || pause);
         const int free_camera = rx_option(HOS_OPT_CHEAT_CAMERA, 0);
+        if (!rx_option(HOS_OPT_PHOTO, 0) && buttons & 0xffffULL) rx_option_set(HOS_OPT_HUD_ACTIVITY, 1);
         const int flying = flight_jump_shortcut(&buttons, rx_option(HOS_OPT_CHEAT_FLIGHT, -1), menu_open, free_camera);
         if (free_camera && !menu_open) {
             for (int i = 0; i < 4; i++) axes |= (uint64_t)(uint16_t)stick[i] << (16 * i);
             height = (int)(buttons >> B_R & 1) - (int)(buttons >> B_L & 1);
             memset(stick, 0, sizeof stick);
             buttons &= ~((1ULL << B_L) | (1ULL << B_R));
+            if (rx_option(HOS_OPT_PHOTO, 0)) buttons = 0; // camera movement must not swing Link's sword
         } else if (flying && !menu_open) {
             const uint64_t climb = (1ULL << B_B) | (1ULL << B_R);
             const int vertical = !!(buttons & climb) - (int)(buttons >> B_L & 1);

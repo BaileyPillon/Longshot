@@ -41,7 +41,7 @@ class CompanionTests(unittest.TestCase):
             self.assertEqual(Path(env['LONGSHOT_OOTRR_GAME']), mode.resolve())
             self.assertEqual(env['HOS_COOP'], '0')
             self.assertNotIn('HOS_FS_OVERLAY', env)
-            self.assertTrue(Path(env['LONGSHOT_OOTRR_DATA']).is_relative_to(root))
+            self.assertEqual(Path(env['LONGSHOT_OOTRR_DATA']), mode.resolve() / 'longshot-companion-data')
             self.assertEqual(command[-2:], ['-m', 'oot_rando'])
             self.assertFalse((mode / 'user').exists())
 

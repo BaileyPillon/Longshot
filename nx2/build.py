@@ -1219,7 +1219,7 @@ def main():
                        "-DIMGUI_DISABLE_WIN32_FUNCTIONS", "-DIMGUI_DISABLE_DEMO_WINDOWS", "-DIMGUI_DISABLE_DEBUG_TOOLS"]
         imgui_deps = b"".join(open(os.path.join(d, f), "rb").read() for d in (imgui, os.path.join(imgui, "backends"), zbic)
                               for f in sorted(os.listdir(d)) if f.endswith(".h"))
-        imgui_users = ("vk_imgui.cpp", "vk_menu.cpp", "vk_coop.cpp")   # (oot-remake-multiplayer: co-op's drawing, vk_coop.cpp)
+        imgui_users = ("vk_imgui.cpp", "vk_menu.cpp", "vk_coop.cpp", "vk_longshot.cpp", "vk_quick_items.cpp", "vk_photo.cpp")
         for f in ("imgui.cpp", "imgui_draw.cpp", "imgui_tables.cpp", "imgui_widgets.cpp", "backends/imgui_impl_vulkan.cpp"):
             vk_jobs.append((cxx, os.path.join(imgui, *f.split("/")),
                             os.path.join(obj_dir, "vk_imgui_" + os.path.basename(f)[:-4] + ".o"), vflags + imgui_flags, imgui_deps))

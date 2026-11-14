@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../gpu/vk/vk_api.h"   /* (HOS_MOUSE_*) */
+#include "../gpu/vk/longshot_photo_options.h"
 
 /* A guest read, of the pointers the game's objects hold: inside the guest's space (below 1 MB: a null pointer's), it is
    read as the lifted code reads it; a page there not committed yet is committed on the touch (mkw_glue.c
@@ -763,10 +764,44 @@ static Seen *screen_seen(uint64_t screen, int64_t now) {
     return free_one;
 }
 
+/* Resolve PlayerStatusScreen through the game's UI lookup and RTTI. Only the
+   visual animation is changed; no persistent GameData or save flag is written. */
+static void longshot_status_hud(Ctx *c, uint64_t screen, int64_t now) {
+    int rx_option(int id,int otherwise);
+    int hos_longshot_hud_original(void);
+    static uint64_t target, target_vtable;
+    static int64_t next;
+    static int overridden, last=-2;
+    const int wanted=rx_option(HOS_OPT_STATUS_HUD,-1);
+    if (wanted<0 && !overridden) return;
+    if (now>=next) {
+        next=now+200000000LL;
+        const uint64_t manager=peek64(peek64(0x84c9e098ULL));
+        const uint64_t lookup=peek64(manager+0x48), type=peek64(0x84c9e770ULL);
+        uint32_t count=0; peek(manager+8,&count,4);
+        const uint64_t fn=peek64(peek64(lookup)+0x50);
+        target=0;
+        if (manager && lookup && type && fn && count && count<4096) {
+            const uint64_t index=guest_call(c,fn,lookup,0x5c7f1c3cu,NULL,NULL);
+            const uint64_t object=index<count ? peek64(peek64(manager+0x10)+index*8) : 0;
+            if (object) target=guest_call(c,peek64(peek64(object)+0x10),object,type,NULL,NULL);
+        }
+        target_vtable=peek64(target);
+    }
+    if (!target || screen!=target || peek64(screen)!=target_vtable) return;
+    const int value=wanted<0 ? hos_longshot_hud_original() : wanted;
+    if (value!=last || overridden!=(wanted>=0)) {
+        guest_call(c,0x802eef00ULL,screen,(uint64_t)value,NULL,NULL);
+        last=value;
+        overridden=wanted>=0;
+        hos_log("longshot: status HUD %s%s",value?"shown":"hidden",overridden?" (temporary)":" (restored)");
+    }
+}
 void hos_oot_menu_tick(Ctx *c, uint64_t screen) {
     if (!screen) return;
     if (trace < 0) trace = env_on("HOS_MENU_TRACE");
     const int64_t now = hos_now_ns();
+    longshot_status_hud(c,screen,now);
     AcquireSRWLockExclusive(&seen_lock);
     Seen *me = screen_seen(screen, now);
     if (!me->running) {

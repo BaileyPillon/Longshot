@@ -37,6 +37,9 @@
 #include "vk_progress.h"   // (StartupView, version_text: the start-up screen)
 #include "vk_ui.h"
 #include "vk_coop.h"   // (oot-remake-multiplayer: co-op's drawing over the picture)
+#include "vk_longshot.h"
+#include "vk_quick_items.h"
+#include "vk_photo.h"
 #include "vk_menu_keys.h"   // (which gamepad buttons confirm and go back: those A and B are bound to)         // (how it looks: Dear ImGui, vk_imgui.h)
 #include "vk_dlss.h"
 #include "vk_framegen.h"   // (Frame generation by: who makes the frames now, framegen_maker)
@@ -1245,6 +1248,20 @@ Row rows[] = {
     {TAB_GAMEPLAY, "Save profile", &opts.save_profile, 1, 9, 1, tx_save_profile,
      "Separate playthroughs. Profile 1 keeps your original saves. Save your progress before restarting to switch. "
      "An explicit --user launch keeps its chosen folder.", nullptr, true, true},
+    {TAB_GAMEPLAY, "Contextual status HUD", &opts.context_hud, 0, 1, 1, tx_onoff,
+     "Hides the native status display during quiet exploration; shows it for four seconds after actions. "
+     "Low health keeps it visible. F8 or Touchpad + R3 opens the photo camera; the world keeps running.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Quick item wheel", &opts.item_wheel, 0, 1, 1, tx_onoff,
+     "F7 or L3 + R3 opens an owned-item wheel. Select with either stick, confirm to equip, back to cancel. "
+     "L1/R1 changes pages. L3 + D-pad selects a favorite; inside the wheel it assigns one. Keyboard: Shift + arrow.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Favorite up", &opts.quick_up, 0, 32, 1, quick::item_name,
+     "L3 + D-pad Up, or Shift + Up. Only owned items usable by this age can be selected.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Favorite right", &opts.quick_right, 0, 32, 1, quick::item_name,
+     "L3 + D-pad Right, or Shift + Right. Selects the item for the normal item button.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Favorite down", &opts.quick_down, 0, 32, 1, quick::item_name,
+     "L3 + D-pad Down, or Shift + Down. Selects the item for the normal item button.", nullptr, false, true},
+    {TAB_GAMEPLAY, "Favorite left", &opts.quick_left, 0, 32, 1, quick::item_name,
+     "L3 + D-pad Left, or Shift + Left. Selects the item for the normal item button.", nullptr, false, true},
 
     // Controls (12 rows; Motion opens the 6 TAB_MOTION rows, Controls its page with the 2 TAB_PAGE rows)
     {TAB_CONTROLS, "Controller in background", &opts.pad_background, 0, 1, 1, tx_onoff,
@@ -1359,6 +1376,8 @@ Row rows[] = {
     {TAB_DEBUG, "ASTC as RGBA8", &opts.astc_rgba8, 0, 1, 1, tx_onoff,
      "Big ASTC textures kept as decoded RGBA8 instead of re-encoded to BC3: a workaround for texture artifacts seen on some AMD "
      "cards (issues 57 and 1006). Takes far more video memory. Applies after restart.", hn_astc_rgba8, true, true},
+    {TAB_GAMEPLAY, "Checkpoints", nullptr, 0, 0, 0, nullptr,
+     "Browse saved checkpoints, capture the latest native save, and configure PS5 shortcuts. Start with Player tools in the Longshot launcher. Save in-game first; recovery restarts into a new profile."},
     // (hookshot) the Gameplay tab's Bug report (vk_bug_report.h): A or Enter writes the report's folder; the help says what is in it
     {TAB_GAMEPLAY, "Bug report", nullptr, 0, 0, 0, nullptr,
      "Saves what an issue needs in a new folder, bug-reports in the game folder: report.txt with the issue form's answers (this "
@@ -4163,7 +4182,8 @@ void menu_set_gpu_count(int count) {
         if (rows[i].value == &opts.gpu_device) restart_state.restart_value(restart_slot[i], opts.gpu_device);
 }
 
-bool menu_is_open() { return open_now.load(std::memory_order_relaxed); }
+bool menu_is_open() { return open_now.load(std::memory_order_relaxed) || longshot::visible() || quick::visible(); }
+void menu_save() { save(); }
 bool scene_tonemap_on() { return dev.hdr && opts.hdr == 2 && opts.hdr_tonemap == 1; }
 // (the tools off on the Debug tab: flight, the free camera and heart protection put away; -1, heart protection never set, is the
 // host's own HOS_OOT_PROTECT_HEARTS)
@@ -4172,7 +4192,7 @@ int menu_heart_protection() {
     return cheats_on() || v < 0 ? v : 0;
 }
 int menu_player_flight() { return cheats_on() ? player_flight.load(std::memory_order_relaxed) : -1; }
-int menu_free_camera() { return cheats_on() ? free_camera.load(std::memory_order_relaxed) : 0; }
+int menu_free_camera() { return photo::active() || (cheats_on() && free_camera.load(std::memory_order_relaxed)); }
 int menu_link_speed() { return cheats_on() ? link_speeds[std::clamp(link_speed.load(std::memory_order_relaxed), 0, kLinkSpeeds - 1)] : 100; }
 int menu_damage_taken() { return cheats_on() ? opts.damage_taken : 1; }   // (Normal while the tools are off; the choice is kept)
 int menu_take_cheat_action() { return cheat_action.exchange(0, std::memory_order_relaxed); }
@@ -4251,6 +4271,9 @@ bool fps_take(int64_t now, int64_t shown, int64_t game, int64_t* next, int64_t* 
 // inside menu_tick's frame on the same thread does not lock itself out
 std::recursive_mutex menu_mu;
 void menu_option_set(int id, int value) {
+    if (id == HOS_OPT_PLAYER_READY) { photo::ready(value != 0); return; }
+    if (id == HOS_OPT_HUD_ACTIVITY) { photo::activity(); return; }
+    if (id >= HOS_OPT_QUICK_OWNED && id <= HOS_OPT_QUICK_RIGHT) { quick::update(id, value); return; }
     if (id == OOT_CHEAT_AGE_ID) {   // (Link's age: the Switch age row shows it)
         if (link_age.exchange(value, std::memory_order_relaxed) != value && page == 0 && cur_tab == TAB_DEBUG) menu_refresh = true;
         return;
@@ -4598,6 +4621,25 @@ void menu_tick() {
     if (host && host->binding)   // (A and B as bound now: the Controls page or the Layout preset can change them)
         menu_keys::confirm_back(host->binding(HOS_BIND_PAD, HOS_SW_A, 0), host->binding(HOS_BIND_PAD, HOS_SW_B, 0), &pad_confirm,
                                 &pad_back);
+    static bool tools_cursor_open = false;
+    if (!quick::visible() && !longshot::visible() && photo::tick(raw, mine, pad_back, press)) {
+        if (open_now.exchange(false) || tools_cursor_open) {
+            tools_cursor_open=false;
+            if (const HWND window=app_window()) PostMessageA(window,WM_APP+8,0,0);
+        }
+        return;
+    }
+    const bool tools_active = quick::visible() ? quick::tick(raw, mine, pad_confirm, pad_back, press) :
+        longshot::visible() ? longshot::tick(raw, mine, pad_confirm, pad_back, press) :
+        quick::tick(raw, mine, pad_confirm, pad_back, press) || longshot::tick(raw, mine, pad_confirm, pad_back, press);
+    if (tools_active) {
+        const bool was_open = open_now.load() || tools_cursor_open;
+        open_now = false;
+        tools_cursor_open = longshot::visible() || quick::visible();
+        if (was_open != tools_cursor_open)
+            if (const HWND window = app_window()) PostMessageA(window, WM_APP + 8, tools_cursor_open ? 1 : 0, 0);
+        return;
+    }
     if (pad(HOS_PAD_GUIDE) || chord_now) press[0] = true;
     {   // holding an arrow or the D-pad repeats it: after 0.35 s, 12 a second, then 30 a second after 1.5 s held
         static int64_t held_since[5], next_repeat[5];
@@ -4957,6 +4999,7 @@ void menu_tick() {
         else if (press[7] && is_motion_row(r)) cur_tab = TAB_MOTION, tab_selected[TAB_MOTION] = 0, press[7] = false, changed = true;
         else if (press[7] && is_share_row(r)) share_pipeline_list(), press[7] = false, changed = true;
         else if (press[7] && &r == &rows[kBugReportRow]) bug_report_save(), press[7] = false, changed = true;
+        else if (press[7] && !strcmp(r.name, "Checkpoints")) { longshot::show(); open_now = false; changed = true; }
         else if (press[7] && !r.value && can_bind()) page = 1, csel = 0, ccol = menu_hit::kCtlPrimary, changed = true;
         if ((press[3] || press[4] || press[7]) && r.value) {   // (Enter, or A, as Right)
             if (press[7]) press[4] = true;
@@ -4975,7 +5018,7 @@ void menu_tick() {
     }
     {   // (hookshot) the window lets the mouse go while the menu is open, and takes it back after (host/display.c)
         static bool told = false;
-        const bool now_open = open_now.load();
+        const bool now_open = menu_is_open();
         if (!now_open) {
             tune_mode = false;
             if (drag_row >= 0) save();   // (a slider let go off the window: kept now)
@@ -5010,10 +5053,10 @@ void menu_tick() {
 
 void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h) {
     const bool start = startup_on.load(std::memory_order_acquire);
-    const bool fps = opts.show_fps && !start;   // (no game frames yet: not "0 FPS" over the start-up screen)
+    const bool fps = opts.show_fps && !start && !photo::active();   // photos keep the saved counter setting
     const bool open = open_now.load(std::memory_order_relaxed);
     const bool coop = !start && coop::wanted();   // (co-op's chat lines and name tags: vk_coop.cpp)
-    if (!start && !fps && !open && !coop) {   // (nothing shows: no ImGui frame, no render pass)
+    if (!start && !fps && !open && !coop && !longshot::visible() && !quick::visible() && !photo::active()) {   // (nothing shows: no ImGui frame, no render pass)
         // (but a new window size or Menu size since the last bake: one frame with nothing drawn that bakes the menu's glyphs
         // and measures its page for the new size, so the next open has no hitch whatever was resized while nothing showed)
         if (prebake_needed(w, h) && ui::begin(w, h)) {
@@ -5038,6 +5081,9 @@ void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h) {
     if (start) draw_startup(c);   // (under the menu)
     if (coop) coop::draw(w, h);   // (under the menu too)
     if (open) draw_menu(c);
+    longshot::draw(c);
+    quick::draw(c);
+    photo::draw(c);
     if (fps) draw_fps(c, open);
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record(cmd, index, w, h);
@@ -5047,11 +5093,13 @@ void menu_record_image(VkCommandBuffer cmd, VkImage image, VkImageView view, uin
     const bool open = open_now.load(std::memory_order_relaxed);
     const bool fps = opts.show_fps && !startup_on.load(std::memory_order_acquire);
     const bool coop = !startup_on.load(std::memory_order_acquire) && coop::wanted();
-    if (!open && !fps && !coop) return;
+    if (!open && !fps && !coop && !longshot::visible() && !quick::visible()) return;
     if (!ui::begin(w, h)) return;
     ui::Ctx c = ui_ctx(w, h);
     if (coop) coop::draw(w, h);
     if (open) draw_menu(c);
+    longshot::draw(c);
+    quick::draw(c);
     if (fps) draw_fps(c, open);
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record_to(cmd, image, view, w, h);

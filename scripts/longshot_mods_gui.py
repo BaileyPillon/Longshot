@@ -1,12 +1,15 @@
 """Longshot's local mod manager. Standard-library Tk; no network or downloads."""
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import sys
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import longshot_mods as mods
+import longshot_loadouts as loadouts
+from longshot_mod_import import install_folder
 
 
 class Manager:
@@ -25,8 +28,22 @@ class Manager:
         toolbar = ttk.Frame(pane)
         toolbar.pack(fill="x")
         ttk.Button(toolbar, text="Choose mods folder…", command=self.choose).pack(side="left")
+        self.import_button = ttk.Button(toolbar, text="Add mod folder…", command=self.add_folder)
+        self.import_button.pack(side="left", padx=(8, 0))
         self.path_text = tk.StringVar(value="No folder selected")
         ttk.Label(toolbar, textvariable=self.path_text).pack(side="left", padx=12)
+        presets = ttk.Frame(pane)
+        presets.pack(fill="x", pady=(12, 0))
+        ttk.Label(presets, text="Loadout").pack(side="left", padx=(0, 8))
+        self.loadout = tk.StringVar()
+        self.loadout_picker = ttk.Combobox(presets, textvariable=self.loadout, state="readonly", width=24)
+        self.loadout_picker.pack(side="left")
+        actions = ttk.Frame(pane)
+        actions.pack(fill="x", pady=(8, 0))
+        for label, action in (("Save current…", self.save_loadout), ("Preview & apply…", self.apply_loadout),
+                              ("Undo switch", lambda: self.recover_loadout(True)),
+                              ("Recover interrupted switch", lambda: self.recover_loadout(False))):
+            ttk.Button(actions, text=label, command=action).pack(side="left", padx=(0, 8))
         table = ttk.Frame(pane)
         table.pack(fill="both", expand=True, pady=(16, 12))
         self.tree = ttk.Treeview(table, columns=("state", "name", "files", "status"), show="headings", selectmode="browse")
@@ -60,6 +77,34 @@ class Manager:
             self.folder = Path(chosen)
             self.refresh()
 
+    def add_folder(self):
+        if not self.folder:
+            messagebox.showinfo("Choose a mods folder", "Select your Longshot mods directory first.", parent=self.window)
+            return
+        chosen = filedialog.askdirectory(title="Choose an extracted mod folder containing romfs", parent=self.window)
+        if not chosen:
+            return
+        root = self.folder
+        self.import_button.configure(state="disabled")
+        self.status.set("Checking and copying the mod. It will start disabled.")
+        pool = ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(install_folder, root, Path(chosen))
+        pool.shutdown(wait=False)
+        self.wait_for_import(future, root)
+
+    def wait_for_import(self, future, root):
+        if not future.done():
+            self.window.after(150, self.wait_for_import, future, root)
+            return
+        self.import_button.configure(state="normal")
+        try:
+            name, count = future.result()
+            if self.folder == root:
+                self.refresh(name)
+            self.status.set(f"Added {name} with {count} files. Select it to review and enable it.")
+        except (OSError, ValueError) as error:
+            messagebox.showerror("Could not add mod", str(error), parent=self.window)
+
     def show_details(self, text):
         self.details.configure(state="normal")
         self.details.delete("1.0", "end")
@@ -83,7 +128,12 @@ class Manager:
         if not self.folder:
             return
         try:
-            self.layers = mods.scan(self.folder)
+            exists = self.folder.exists() or self.folder.is_symlink()
+            self.layers = mods.scan(self.folder) if exists else []
+            names = sorted(loadouts.catalog(self.folder)["loadouts"], key=str.casefold) if exists else []
+            self.loadout_picker.configure(values=names)
+            if self.loadout.get() not in names:
+                self.loadout.set(names[0] if names else "")
             self.tree.delete(*self.tree.get_children())
             for layer in self.layers:
                 status = "Needs attention" if layer["errors"] else "RomFS only; ExeFS ignored" if layer["exefs_unsupported"] else "No reported mismatch"
@@ -91,7 +141,7 @@ class Manager:
             self.path_text.set(str(self.folder))
             conflicts = mods.conflicts(self.layers)
             self.status.set(f"{len(self.layers)} mods · {sum(m['enabled'] for m in self.layers)} enabled · {len(conflicts)} overlapping files. The last enabled mod wins each overlap.")
-            self.show_details("Select a mod to see compatibility notes and which files overlap." if self.layers else "No mods found. Put each mod in its own folder containing a romfs folder, then refresh.")
+            self.show_details("Select a mod to see compatibility notes and which files overlap." if self.layers else "Use Add mod folder to import a folder containing romfs.")
             if focus in self.tree.get_children():
                 self.tree.selection_set(focus)
                 self.tree.see(focus)
@@ -105,7 +155,10 @@ class Manager:
         if not selected:
             return
         try:
-            mods.set_enabled(self.folder, selected[0], enabled)
+            with loadouts.locked(self.folder):
+                if (self.folder / loadouts.PENDING).exists():
+                    raise ValueError("Recover the interrupted switch first")
+                mods.set_enabled(self.folder, selected[0], enabled)
             self.refresh(selected[0])
         except (OSError, ValueError) as error:
             messagebox.showerror("Could not change this mod", str(error), parent=self.window)
@@ -121,10 +174,57 @@ class Manager:
             return
         names[i], names[j] = names[j], names[i]
         try:
-            mods.set_order(self.folder, names)
+            with loadouts.locked(self.folder):
+                if (self.folder / loadouts.PENDING).exists():
+                    raise ValueError("Recover the interrupted switch first")
+                mods.set_order(self.folder, names)
             self.refresh(selected[0])
         except (OSError, ValueError) as error:
             messagebox.showerror("Could not change load order", str(error), parent=self.window)
+
+    def save_loadout(self):
+        if not self.folder:
+            return
+        name = simpledialog.askstring("Save loadout", "Name this mod setup:", parent=self.window)
+        if name is None:
+            return
+        try:
+            loadouts.capture(self.folder, name.strip())
+            self.loadout.set(name.strip())
+            self.refresh()
+            self.status.set(f"Saved {name.strip()}. Mod assets and saves were not copied.")
+        except (OSError, ValueError) as error:
+            messagebox.showerror("Could not save loadout", str(error), parent=self.window)
+
+    def apply_loadout(self):
+        if not self.folder:
+            return
+        try:
+            name = self.loadout.get()
+            plan = loadouts.preview(self.folder, name)
+            listing = "\n".join(f"{'On' if m['enabled'] else 'Off'}   {m['name']}" for m in plan["layers"])
+            overlaps = "\n".join(f"{c['path']} → {c['winner']}" for c in plan["conflicts"][:20])
+            details = listing + f"\n\n{len(plan['conflicts'])} overlapping files. Last enabled layer wins."
+            if overlaps:
+                details += "\n" + overlaps
+            self.show_details(details)
+            if messagebox.askokcancel("Apply loadout", f"Apply {name}?\n\n" + details[:3500] +
+                                      "\n\nClose the game first. You can undo this switch.", parent=self.window):
+                loadouts.apply(self.folder, name, plan["token"])
+                self.refresh()
+                self.status.set(f"Applied {name}. Ready for the next game launch. Undo switch restores the previous setup.")
+        except (OSError, ValueError) as error:
+            messagebox.showerror("Could not switch loadout", str(error), parent=self.window)
+
+    def recover_loadout(self, undo):
+        if not self.folder:
+            return
+        try:
+            loadouts.recover(self.folder, undo=undo)
+            self.refresh()
+            self.status.set("Restored the previous mod order and enabled state.")
+        except (OSError, ValueError) as error:
+            messagebox.showerror("Could not restore mod setup", str(error), parent=self.window)
 
 
 def main():

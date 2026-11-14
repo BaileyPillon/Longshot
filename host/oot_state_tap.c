@@ -163,6 +163,13 @@ static int state_float(uint64_t mgr, uint32_t hash, float *f) {
     return e && state_peek(e + state_kind[KIND_FLOAT].value, f, 4) && isfinite(*f);
 }
 
+/* Called only from Link's serialized update, like the live state sampler. */
+int hos_oot_health_now(void) {
+    int64_t life;
+    const uint64_t mgr=state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    return state_number(mgr,KIND_INT,STATE_LIFE,&life) && life>=0 && life<=1000 ? (int)life : -1;
+}
+
 /* ,"<key>":<number flag> or null */
 static void state_put_number(StateLine *l, uint64_t mgr, const char *key, int kind, uint32_t hash) {
     int64_t v;

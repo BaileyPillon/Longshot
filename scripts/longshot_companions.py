@@ -96,7 +96,23 @@ def launch_plan(name, directory, game=None, saves=None):
             raise ValueError("Build the full randomizer first: longshot_companions.py build ootrr")
         env["LONGSHOT_OOTRR_GAME"] = str(mode_game)
         key = hashlib.sha256(str(mode_game).encode()).hexdigest()[:12]
-        env["LONGSHOT_OOTRR_DATA"] = str(directory / "build/longshot" / key)
+        # A patch rebuild changes directory. Keep seed history with the isolated
+        # mode and migrate an existing managed folder only when unambiguous.
+        data = mode_game / "longshot-companion-data"
+        if not data.exists():
+            candidates = [p / "build/longshot" / key for p in directory.parent.glob("ootrr-*")]
+            candidates = [p for p in candidates if p.is_dir() and any(p.iterdir())]
+            if len(candidates) > 1:
+                raise ValueError("Multiple previous randomizer histories exist; choose one before migration")
+            if candidates:
+                source = candidates[0]
+                if any(p.is_symlink() or (hasattr(p, "is_junction") and p.is_junction())
+                       for p in [source, *source.rglob("*")]):
+                    raise ValueError("Randomizer history contains linked paths; migration refused")
+                temporary = Path(tempfile.mkdtemp(prefix=".longshot-history-", dir=mode_game))
+                shutil.copytree(source, temporary, dirs_exist_ok=True)
+                temporary.rename(data)
+        env["LONGSHOT_OOTRR_DATA"] = str(data)
         env["HOS_COOP"] = "0"
         env.pop("HOS_FS_OVERLAY", None)
         env.pop("HOS_MODS", None)

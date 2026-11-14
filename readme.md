@@ -376,6 +376,13 @@ HDR, Detail, and GPU and memory (last: the rows to change when something is wron
 | | Discord status | Off, On ("Playing Hookshot" and the time played in your Discord status, while Discord runs on this PC) | On |
 | | Skip opening | Off, On (skips the new-game opening: the story movie and Navi waking Link; later cutscenes and the title screen stay) | Off |
 | | Save profile | 1 (original saves), or separate playthroughs 2 to 9; switch after saving and restarting | 1 |
+| | Contextual status HUD | Off, On; shows the status display after actions or during low health | Off |
+| | Quick item wheel | Off / On; F7 or L3 + R3 | Off |
+| | Favorite up | None / an item; L3 + D-pad Up | None |
+| | Favorite right | None / an item; L3 + D-pad Right | None |
+| | Favorite down | None / an item; L3 + D-pad Down | None |
+| | Favorite left | None / an item; L3 + D-pad Left | None |
+| | Checkpoints | In-game native-save browser and configurable PS5 shortcuts; start with Player tools in Longshot's launcher | Off |
 | | Bug report | Saves a report into a new folder in `bug-reports` (below) | |
 | Controls | Controller in background | Off, On | Off |
 | | Mouse camera | As the stick, Native | As the stick |

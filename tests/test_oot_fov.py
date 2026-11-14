@@ -57,7 +57,9 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(len(set(option_ids.values())), 3, "FOV must not alias prompts or camera speed")
         self.assertIn("int fov = 100;", options)
         self.assertIn('"Field of view", &opts.fov, 50, 150, 5, tx_fov', menu)
-        self.assertIn("if (id == HOS_OPT_FOV) return opts.fov;", replay)
+        photo = (ROOT / "gpu/vk/vk_photo.cpp").read_text(encoding="utf-8")
+        self.assertIn("if (id == HOS_OPT_FOV) return photo::fov();", replay)
+        self.assertIn("return active() ? lens.load() : opts.fov;", photo)
         self.assertIn("if (id == HOS_OPT_PROMPTS) return opts.prompts;", replay)
         self.assertIn("if (id == HOS_OPT_CAMERA_SPEED) return opts.camera_speed;", replay)
         for name in ("is_slider", "stops_at_ends"):

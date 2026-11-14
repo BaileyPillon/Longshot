@@ -97,6 +97,9 @@ struct Options {
     int volume = 100;     // (hookshot) the game's sound in percent, 0 to 100 (host/nn_audio.c: HOS_OPT_VOLUME, 27)
     int mute_background = 0;   // (hookshot) no sound while another window has the focus (host/nn_audio.c: HOS_OPT_MUTE_BACKGROUND, 28)
     int skip_opening = 0;   // (hookshot) skip the new-game opening (host/hos_main.c hos_oot_opening: HOS_OPT_SKIP_OPENING, 52). Off
+    int item_wheel = 0;
+    int context_hud = 0;
+    int quick_up = 0, quick_right = 0, quick_down = 0, quick_left = 0;
     int save_profile = 1;   // Longshot: original saves (1), or separate playthroughs (2..9), after a restart
     int game_lang = 0;    // the game's language (vk_menu_i18n.h game_lang_code): language.txt's, not kept in the options file
     int menu_lang = 0;    // this menu's language: 0 Auto (the game's own, language.txt), else menu_i18n::kLangs[menu_lang - 1]
@@ -130,6 +133,7 @@ int menu_player_flight();
 int menu_free_camera();
 int menu_link_speed();   // (Movement speed in percent, 100 while the tools are off)
 int menu_damage_taken();   // (Damage taken, HOS_OPT_DAMAGE_TAKEN: 1, Normal, while the tools are off)
+void menu_save();
 int menu_take_cheat_action();
 void menu_note_frame(bool game_frame, int shown = 1);   // (the frame rates the FPS counter shows)
 /// The game's picture's size (the Output resolution, its crop) and the window's, at each present: the Window scaling filter

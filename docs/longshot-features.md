@@ -104,7 +104,11 @@ The launcher's explicit `--user` selection takes precedence over the in-game pro
 
 **Saves & checkpoints** lists native saves in the selected profile. Save normally and close the game first:
 
-- **Import saves:** select the source account folder containing `account.sav` and `slot_00`, `slot_01`, etc.
+- **Export account ZIP:** select any slot in the account to export its complete 1.1.1 native saves. Longshot
+  verifies the ZIP before publishing it. The archive uses NX2navi's version 1 save format and includes file hashes.
+- **Import save ZIP:** choose a Longshot or NX2navi ZIP and an unused profile from 2–9. The launcher copies only
+  the native save files to the new profile and checks any Longshot hashes recorded in the ZIP.
+- **Import save folder:** select the source account folder containing `account.sav` and `slot_00`, `slot_01`, etc.
   This works with the same native save format used by Hookshot, NX2navi, Ocarina Recomp and the emulator forks.
   Choose an unused destination profile from 2–9 using the bottom selector. Files are bounded, staged, flushed,
   read back and verified before publication. Existing profiles, profile 1 and source saves are never overwritten.
@@ -118,6 +122,10 @@ The launcher's explicit `--user` selection takes precedence over the in-game pro
 
 These are native-save checkpoints, not snapshots of live process memory or a pause-menu quicksave feature.
 The launcher does not establish arbitrary mid-combat restoration. Keep the checkpoint files local: they contain saves.
+
+In **Manage mods**, use **Add mod folder** to copy an extracted RomFS mod into the game. It starts disabled.
+Select it to review conflicts and enable it for the next launch. Existing mods with the same name are kept.
+
 **This PC** reads CPU/RAM/GPU information and offers conservative starting points; it never changes game or Windows
 settings. NVIDIA VRAM comes from `nvidia-smi` where available, avoiding Windows' truncated 4 GiB adapter field.
 Advice is not a measured performance result. An optional `--romfs <folder>` lets ordinary development launches share

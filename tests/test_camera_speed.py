@@ -127,6 +127,8 @@ def source_checks():
           "the scale is not set from the menu's row at each present (100% without the renderer's menu)")
     replay = (ROOT / "gpu" / "vk" / "vk_replay.cpp").read_text(encoding="utf-8")
     api = (ROOT / "gpu" / "vk" / "vk_api.h").read_text(encoding="utf-8")
+    api += (ROOT / "gpu/vk/longshot_items.h").read_text(encoding="utf-8")
+    api += (ROOT / "gpu/vk/longshot_photo_options.h").read_text(encoding="utf-8")
     value = {}   # (every HOS_OPT_* enum)
     for first, start, rest in re.findall(r"enum \{ (HOS_OPT_\w+) = (\d+)(?:, ([^}]*))? \}", api):
         names = [first] + [n.strip() for n in (rest or "").split(",") if n.strip()]

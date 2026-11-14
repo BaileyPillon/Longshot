@@ -1299,6 +1299,22 @@ static int oot_flight_moved_away(Ctx *c, uint64_t actor, const float held[3]) {
     return apart > 2.0f * 2.0f;
 }
 
+#include "oot_quick_items.inc"
+#include "../gpu/vk/longshot_photo_options.h"
+static int longshot_hud_original = 1;
+int hos_longshot_hud_original(void) { return __atomic_load_n(&longshot_hud_original, __ATOMIC_RELAXED); }
+static void longshot_player_tick(Ctx *c) {
+    void rx_option_set(int id, int value);
+    int hos_oot_health_now(void);
+    int loading=1, visible=1;
+    const int ready=oot_gamedata_bool(c,0xef2b60c2u,&loading) && !loading && !oot_event_playing(c);
+    rx_option_set(HOS_OPT_PLAYER_READY,ready);
+    if (oot_gamedata_bool(c,0xf685e8e0u,&visible)) __atomic_store_n(&longshot_hud_original,visible,__ATOMIC_RELAXED);
+    static int previous=-1;
+    const int life=hos_oot_health_now();
+    if (life<0 || life<=12 || (previous>=0 && life<previous)) rx_option_set(HOS_OPT_HUD_ACTIVITY,1);
+    previous=life;
+}
 static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {
     int rx_option(int id, int otherwise);
     static uint64_t flying_actor, marked_actor, marked_controller;
@@ -1328,6 +1344,8 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
     oot_inventory_refresh(c, now);
     oot_player_speed(c, components);
     oot_map_refresh(c, now);
+    quick_items_tick(c, now);
+    longshot_player_tick(c);
     if (action >= OOT_CHEAT_ITEM_ACTION && action < OOT_CHEAT_ITEM_ACTION + 256 * (int)OOT_ITEM_COUNT) {
         oot_inventory_edit(c, action);
     } else if (action == OOT_AGE_ACTION) {

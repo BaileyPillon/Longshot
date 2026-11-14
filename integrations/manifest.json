@@ -3,9 +3,9 @@
   "companions": {
     "ootrr": {
       "repository": "https://github.com/Mozencaz/OotrR",
-      "commit": "fdc2b2f26ba146b60f565aa83892ccd8bb25acdc",
+      "commit": "d5dfd39e746faf0b31d8a7f9f71158be398f0cbe",
       "license": "MIT",
-      "patches": ["patches/ootrr-isolation.patch"]
+      "patches": ["patches/ootrr-isolation.patch", "patches/ootrr-adventure.patch"]
     },
     "oot-coop": {
       "repository": "https://github.com/daurosk/oot-remake-multiplayer",

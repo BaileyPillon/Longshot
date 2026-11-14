@@ -14,6 +14,7 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import longshot_launcher_core as core
 import longshot_companions as companions
+import longshot_save_packages as save_packages
 from longshot_mods_gui import Manager
 
 
@@ -26,6 +27,8 @@ class Launcher:
         self.child = None
         self.journal = None
         self.journal_session = None
+        self.party = None
+        self.player_tools = None
         window.title("Longshot")
         window.geometry("1020x760")
         window.minsize(840, 640)
@@ -55,14 +58,15 @@ class Launcher:
         self.selector.bind("<<ComboboxSelected>>", lambda _: self.refresh())
         self.button(row, "Play Longshot", self.play).pack(side="left", padx=16)
         self.button(row, "Play with journal", self.play_journal).pack(side="left")
+        self.button(row, "Play with tools", self.play_tools).pack(side="left", padx=8)
         self.profile_text = tk.StringVar()
         ttk.Label(play, textvariable=self.profile_text, wraplength=860).pack(anchor="w", pady=(0, 20))
         ttk.Label(play, text="Tools", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 8))
         for label, explanation, callback in (
-            ("Manage mods", "Enable mods, choose their order, and inspect file conflicts.", self.mods),
+            ("Manage mods", "Save named loadouts, preview conflicts, switch setups and undo.", self.mods),
             ("Completion tracker", "Read this profile's saves. Build the tracker once with the companion tool.", lambda: self.companion("tracker")),
-            ("Join co-op…", "Join a configured server using a separate profile. Requires the local co-op pack.", self.coop),
-            ("Full randomizer", "OoTrR logic, tracking and Archipelago tools in a separate game folder.", lambda: self.companion("ootrr")),
+            ("Co-op party…", "Host or join a party, choose a tunic color and use a separate profile.", self.coop),
+            ("Randomized adventure…", "Pick a preset, share a seed recipe, or set up Archipelago multiworld.", self.adventure),
             ("Randomizer", "Generate a separate seed and playthrough. Some seeds may be unbeatable.", lambda: self.companion("randomizer"))):
             row = ttk.Frame(play)
             row.pack(fill="x", pady=7)
@@ -72,13 +76,15 @@ class Launcher:
                   "This launcher uses the profile selected above. Co-op and inherited randomizer overlays are off for ordinary play.",
                   wraplength=850).pack(anchor="w", pady=24)
         ttk.Label(saves, text="Native saves", font=("Segoe UI", 13, "bold")).pack(anchor="w")
-        ttk.Label(saves, text="Save in the game and close it before importing or capturing. A checkpoint keeps a native save point, not live memory.",
+        ttk.Label(saves, text="Save in the game and close it before transferring or capturing saves. A ZIP contains every completed slot in the selected account.",
                   wraplength=860).pack(anchor="w", pady=(4, 8))
         self.slots = self.table(saves, (("account", "Account", 380), ("slot", "Save slot", 130)), height=4)
         row = ttk.Frame(saves)
         row.pack(fill="x", pady=8)
         self.button(row, "Capture selected save", self.capture).pack(side="left")
-        self.button(row, "Import saves into a new profile…", self.import_save).pack(side="left", padx=8)
+        self.button(row, "Export account ZIP…", self.export_save_package).pack(side="left", padx=8)
+        self.button(row, "Import save ZIP…", self.import_save_package).pack(side="left")
+        self.button(row, "Import save folder…", self.import_save).pack(side="left", padx=8)
         self.button(row, "Refresh", self.refresh).pack(side="right")
         ttk.Label(saves, text="Checkpoints", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(16, 8))
         self.archives = self.table(saves, (("name", "Checkpoint", 380), ("slot", "Save slot", 130), ("status", "Status", 200)), height=4)
@@ -191,6 +197,38 @@ class Launcher:
         self.journal_session = None
         self.status.set(f"Started Longshot with save profile {self.profile.get()}.")
 
+    def play_tools(self):
+        from longshot_player_tools import Session
+        game, number = self.require_game(), int(self.profile.get())
+        def started(session):
+            if self.journal and self.journal.window.winfo_exists():
+                self.journal.close()
+            self.player_tools = session
+            self.child = session.current
+            self.journal_session = (session.endpoint, game / "longshot-journal" / f"profile-{number}.json", number)
+            self.status.set(f"Started profile {number} with player tools. Press F5 or choose Insert → Gameplay → Checkpoints.")
+            self.watch_player_tools(session)
+        self.task("Starting player tools…", lambda: Session(game, number, self.romfs, self.exefs), started)
+
+    def watch_player_tools(self, session):
+        if self.player_tools is not session:
+            return
+        self.child = session.current
+        if session.number != int(self.profile.get()):
+            self.profile.set(str(session.number))
+            reopen_journal = self.journal and self.journal.window.winfo_exists()
+            if reopen_journal:
+                self.journal.close()
+            self.journal_session = (session.endpoint, session.game / "longshot-journal" / f"profile-{session.number}.json", session.number)
+            if reopen_journal:
+                from longshot_journal import JournalWindow
+                endpoint, notes, number = self.journal_session
+                self.journal = JournalWindow(tk.Toplevel(self.window), endpoint, notes, str(number))
+            self.refresh()
+            self.status.set(session.message)
+        if session.current.poll() is None or session.thread.is_alive():
+            self.window.after(500, lambda: self.watch_player_tools(session))
+
     def play_journal(self):
         from longshot_journal import JournalWindow
         game = self.require_game()
@@ -230,38 +268,12 @@ class Launcher:
         Manager(tk.Toplevel(self.window), self.game / "mods")
 
     def coop(self):
-        game = self.require_game()
-        dialog = tk.Toplevel(self.window)
-        dialog.title("Join co-op — Longshot")
-        dialog.resizable(False, False)
-        pane = ttk.Frame(dialog, padding=20)
-        pane.pack(fill="both", expand=True)
-        ttk.Label(pane, text="Join co-op", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
-        ttk.Label(pane, text="Use a profile reserved for co-op. Your host provides the address and password.\n"
-                  "This starts the game; it does not start a server or change router settings.",
-                  wraplength=510).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 16))
-        values = {key: tk.StringVar(value=value) for key, value in (
-            ("profile", self.profile.get() if self.profile.get() != "1" else "2"),
-            ("server", "127.0.0.1"), ("port", "27510"), ("name", "Player"), ("password", ""))}
-        for row, (key, label) in enumerate((("profile", "Co-op profile"), ("server", "Host name / IPv4 address"),
-                                           ("port", "Port"), ("name", "Player name"), ("password", "Session password")), 2):
-            ttk.Label(pane, text=label).grid(row=row, column=0, sticky="w", padx=(0, 16), pady=6)
-            if key == "profile":
-                field = ttk.Combobox(pane, textvariable=values[key], values=list(map(str, range(2, 10))), state="readonly", width=8)
-            else:
-                field = ttk.Entry(pane, textvariable=values[key], width=32, show="*" if key == "password" else "")
-            field.grid(row=row, column=1, sticky="w", pady=6)
-        ttk.Label(pane, text="The password is passed only to this game process and is not saved by the launcher.",
-                  wraplength=510).grid(row=7, column=0, columnspan=2, sticky="w", pady=(12, 16))
-        def join():
-            number = int(values["profile"].get())
-            self.child = core.start_coop(game, number, values["server"].get().strip(), int(values["port"].get()),
-                                         values["name"].get(), values["password"].get(), self.romfs)
-            self.journal_session = None
-            values["password"].set("")
-            self.status.set(f"Started co-op with profile {number}. Connection status appears in the game.")
-            dialog.destroy()
-        ttk.Button(pane, text="Join co-op", command=lambda: self.guard(join)).grid(row=8, column=1, sticky="e")
+        self.require_game()
+        if self.party and self.party.window.winfo_exists():
+            self.party.window.lift()
+            return
+        from longshot_party_gui import PartyWindow
+        self.party = PartyWindow(self)
 
     def companion(self, name):
         self.require_game()
@@ -272,6 +284,10 @@ class Launcher:
             return subprocess.Popen(command, cwd=directory, env=env)
         self.task(f"Opening {name}…", work, lambda _: self.status.set(f"Opened {name}."))
 
+    def adventure(self):
+        from longshot_adventure_gui import open_adventure
+        open_adventure(self)
+
     def import_save(self):
         game = self.require_game()
         number = int(self.restore_number.get())
@@ -281,6 +297,34 @@ class Launcher:
         if selected:
             self.task("Copying and verifying native saves…", lambda: core.import_save(selected, game, number),
                       lambda result: self.saved(f"Imported {len(result['slots'])} save slots into new profile {number}. Originals preserved.", number))
+
+    def export_save_package(self):
+        game = self.require_game()
+        chosen = self.slots.selection()
+        if not chosen:
+            raise ValueError("Select a save slot to export its account")
+        core.closed_games()
+        account, _ = chosen[0].split("/")
+        profile = int(self.profile.get())
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        path = filedialog.asksaveasfilename(title=f"Export all slots for profile {profile}",
+                                           initialfile=f"Longshot-profile-{profile}-{stamp}.zip",
+                                           defaultextension=".zip", filetypes=[("Save ZIP", "*.zip")], parent=self.window)
+        if path:
+            self.task("Exporting and verifying the save ZIP…", lambda: save_packages.export_package(game, profile, account, path),
+                      lambda result: self.status.set(f"Exported {len(result['slots'])} save slots to {result['path']}"))
+
+    def import_save_package(self):
+        game = self.require_game()
+        number = int(self.restore_number.get())
+        core.closed_games()
+        if core.profile_folder(game, number).exists():
+            raise ValueError(f"Profile {number} already exists. Select an unused profile for import / restore.")
+        path = filedialog.askopenfilename(title=f"Import a Longshot or NX2navi save ZIP into profile {number}",
+                                          filetypes=[("Save ZIP", "*.zip")], parent=self.window)
+        if path:
+            self.task("Checking the save ZIP and creating a new profile…", lambda: save_packages.import_package(path, game, number),
+                      lambda result: self.saved(f"Imported {len(result['slots'])} save slots into new profile {number}.", number))
 
     def capture(self):
         game = self.require_game()
@@ -332,6 +376,12 @@ class Launcher:
         if self.busy:
             self.status.set("Wait for the current operation to finish before closing.")
             return
+        if self.party and self.party.window.winfo_exists() and not self.party.close():
+            return
+        if self.player_tools and self.player_tools.thread.is_alive():
+            if not messagebox.askyesno("Close Longshot launcher", "Closing this launcher disables in-game checkpoint tools. The game stays open. Close anyway?", parent=self.window):
+                return
+            self.player_tools.close()
         self.pool.shutdown(wait=False)
         if self.journal and self.journal.window.winfo_exists():
             self.journal.close()

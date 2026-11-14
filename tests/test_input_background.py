@@ -68,6 +68,10 @@ def main():
     constants += block(api, "enum { HOS_KEY_MOVE_UP") + ";\n"   # (the keys-only controls)
     constants += block(api, "enum { HOS_OPT_CHEAT_HEARTS") + ";\n"
     constants += block(api, "enum { HOS_OPT_HOLD_TOGGLE") + ";\n"
+    constants += block(api, "enum { HOS_PAD_SOUTH") + ";\n"
+    for header, marker in (("longshot_items.h", "HOS_OPT_ITEM_WHEEL"), ("longshot_photo_options.h", "HOS_OPT_PHOTO")):
+        options = (ROOT / "gpu/vk" / header).read_text(encoding="utf-8")
+        constants += block(options, "enum { " + marker) + ";\n"
     constants += block(api, "enum { HOS_BIND_PAD") + ";\n"   # (the live input's !bind)
     for name in ("STATE_SIZE", "NPAD_NO1", "ATTR_CONNECTED"):
         matches = re.findall(r"^#define " + name + r"\s+[^\n]+", hid, re.M)
@@ -81,7 +85,9 @@ def main():
     cheat_spies = """
 volatile int hos_oot_live_action;
 int hos_oot_flight_shortcut_ready(void) { CHECK(!"unexpected cheat readiness query"); return 0; }
-void rx_option_set(int id, int value) { (void)id; (void)value; CHECK(!"unexpected cheat option change"); }
+void rx_option_set(int id, int value) {
+    CHECK(id == HOS_OPT_HUD_ACTIVITY && value == 1);
+}
 """
     # (the host's own presses and stick, for the game's menus' mouse (host/oot_menu.c): none here; the player's input
     # time it hides the mouse by: not looked at)

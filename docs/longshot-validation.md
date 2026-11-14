@@ -1,5 +1,24 @@
 # Longshot integration validation — 13 November 2026
 
+## 14 November save exchange and mod import
+
+- The Longshot launcher exported a copied Deku Tree account into a verified ZIP and restored its four native
+  files into a separate profile. The game mounted that profile, reached Inside the Deku Tree at frame 1162,
+  and exited with code 0. The original account still matched the export and the source fixture byte for byte.
+  The first start timed out during pipeline preparation. A second attempt waited through preparation and loaded
+  successfully. This was a save recovery check, with no controlled frame-rate measurement.
+- NX2navi 0.10.2-rc4's ZIP parser accepted the export. The import test also covers its manifest format with optional
+  diagnostic attachments and confirms those attachments stay out of the restored profile.
+- The mod import fixture installed a temporary RomFS layer, verified it started disabled, enabled it through the
+  existing manager backend, and rejected conflicting names and incompatible manifests. The Tk launcher and mod
+  manager loaded with the new controls.
+- All 19 focused Longshot, checkpoint and menu-documentation checks passed. Windows menu/input fixture fixes
+  passed their own reruns. OoTrR 0.5.2 ran 356 tests (286 passed, 70 skipped) and its packaged self-test passed.
+  Regular Hookshot and experimental profile 4 still matched their saved hash baselines.
+
+The item wheel, pause checkpoint controls and photo mode still need individual gameplay acceptance. The
+[player roadmap](longshot-player-roadmap.md) tracks the remaining tests and upstream candidates.
+
 Branch: `feat/fork-feature-integration`. Upstream base: `4aee23659b9436dab2cd7be1ac07333c06246b7c`
 (Hookshot v2.2.0-rc.1). The previous Longshot checkpoint/devtools commits remain in history.
 

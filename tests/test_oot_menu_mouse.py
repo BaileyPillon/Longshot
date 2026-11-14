@@ -72,6 +72,8 @@ static uint64_t heap_top = FAKE_BASE + 0x1000;
 static int64_t clock_ns = 1000000000LL;
 void hos_log(const char *fmt, ...) { va_list a; va_start(a, fmt); vfprintf(stderr, fmt, a); va_end(a); fputc(10, stderr); }
 int64_t hos_now_ns(void) { return clock_ns; }
+int rx_option(int id, int otherwise) { (void)id; return otherwise; }
+int hos_longshot_hud_original(void) { return 1; }
 void hos_oot_menu_focus(Ctx *c, uint64_t screen, uint64_t pane, uint64_t lr);
 void hos_oot_menu_tick(Ctx *c, uint64_t screen);
 
@@ -349,6 +351,7 @@ class OotMenuMouseTests(unittest.TestCase):
             # (beside the stand-in hos.h, and its "../gpu/vk/vk_api.h" the stand-in's)
             (tmp / "host" / "hos.h").write_text(HOS_H, encoding="utf-8")
             (tmp / "gpu" / "vk" / "vk_api.h").write_text(VK_API_H, encoding="utf-8")
+            shutil.copy(ROOT / "gpu/vk/longshot_photo_options.h", tmp / "gpu/vk/longshot_photo_options.h")
             # (and the real "../gpu/vk/compat/hookshot_env.h": env_on, the switches' rule)
             (tmp / "gpu" / "vk" / "compat").mkdir()
             shutil.copy(ROOT / "gpu" / "vk" / "compat" / "hookshot_env.h", tmp / "gpu" / "vk" / "compat" / "hookshot_env.h")

@@ -85,15 +85,21 @@ def save_files(source):
 
 def import_save(source, game, number):
     """Verified staged copy; original saves and existing destination profiles survive."""
+    closed_games()
+    source = plain_path(source)
+    data, slots = save_files(source)
+    account = source.name.lower() if re.fullmatch(r"[0-9a-fA-F]{32}", source.name) else DEFAULT_ACCOUNT
+    return publish_saves(data, slots, account, game, number)
+
+
+def publish_saves(data, slots, account, game, number):
+    """Publish validated save bytes without replacing an existing profile."""
     if number == 1:
         raise ValueError("Import into a new profile from 2 through 9; profile 1 is your original playthrough")
     closed_games()
-    source = plain_path(source)
     destination = profile_folder(game, number)
     if destination.exists():
         raise ValueError("This profile already exists. Choose a new profile to keep its progress.")
-    data, slots = save_files(source)
-    account = source.name.lower() if re.fullmatch(r"[0-9a-fA-F]{32}", source.name) else DEFAULT_ACCOUNT
     destination.parent.mkdir(parents=True, exist_ok=True)
     plain_path(destination.parent)
     destination.mkdir()  # Reserve exclusively. Never overwrite even an empty existing profile.

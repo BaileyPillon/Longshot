@@ -104,6 +104,7 @@ def source_checks():
     if "rx_option(HOS_OPT_VOLUME, 100)" not in player or "rx_option(HOS_OPT_MUTE_BACKGROUND, 0)" not in player:
         raise SystemExit("nn_audio.c: the volume is not read as HOS_OPT_VOLUME (default 100) and HOS_OPT_MUTE_BACKGROUND (off)")
     replay, api = read("gpu", "vk", "vk_replay.cpp"), read("gpu", "vk", "vk_api.h")
+    api += read("gpu", "vk", "longshot_items.h") + read("gpu", "vk", "longshot_photo_options.h")
     value = {}   # (every HOS_OPT_* enum: the cheats', the motion rows', the Audio tab's, and one-name ones as Text size's)
     for first, start, rest in re.findall(r"enum \{ (HOS_OPT_\w+) = (\d+)([^}]*)\}", api):
         names = [first] + [n.strip() for n in rest.split(",") if n.strip()]
