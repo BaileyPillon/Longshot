@@ -223,7 +223,7 @@ def package(a):
             return 1
     else:
         print("no setup list: the package has no play profile and no prebuilt third_party files")
-    if a.include_tk:
+    if getattr(a, "include_tk", False):
         python_dir = os.path.join(tools, "python")
         if not os.path.isdir(python_dir):
             extract(named_part(a.list, "python"), "HookshotBuilder/tools/python/", python_dir)
@@ -352,6 +352,8 @@ def main():
     a = p.parse_args()
     if a.cmd == "previous" and bool(a.bootstrap_url) != bool(a.bootstrap_sha256):
         p.error("--bootstrap-url and --bootstrap-sha256 must be supplied together")
+    if a.cmd == "package" and a.include_tk and not a.list:
+        p.error("--include-tk requires --list")
     return {"previous": previous, "profile": profile, "llvm-mingw": llvm_mingw, "package": package}[a.cmd](a)
 
 
