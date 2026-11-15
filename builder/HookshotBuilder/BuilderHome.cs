@@ -15,14 +15,14 @@ static class BuilderHome
 
     static readonly Lazy<Home> Current = new(() => Resolve(
         Environment.GetEnvironmentVariable(RootVariable), AppContext.BaseDirectory,
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HookshotBuilder"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LongshotBuilder"),
         Environment.GetEnvironmentVariable(PortableVariable) == "1"));
 
     public static string Base => Current.Value.Root;
     public static bool Portable => Current.Value.Portable;
     public static string DefaultGame => Portable
-        ? Path.Combine(Directory.GetParent(Base)!.FullName, "Hookshot")
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Games", "Hookshot");
+        ? Path.Combine(Directory.GetParent(Base)!.FullName, "Longshot")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Games", "Longshot");
 
     internal static Home Resolve(string? requested, string appDirectory, string standard, bool portableRequested = false)
     {

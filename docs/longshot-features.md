@@ -330,8 +330,8 @@ no server connection or public hosting is started by these preparation commands.
 ## Builds and updates
 
 Use the normal [development guide](development.md) to build the game. Keep this prerelease integration separate from
-the regular play installation until gameplay acceptance is complete. Existing saves/settings are not migrated by this PR.
-The mod manager and companions are tools in this checkout; no new installer or desktop shortcut is implied.
+the regular play installation until gameplay acceptance is complete. Use **Player tools** in the [Windows preview](longshot-preview.md) to open the launcher and mod manager.
+The optional co-op, tracker and randomizer companions are available from a source checkout.
 
 No default enables frame generation or HDR here. For a system that previously showed flicker, begin testing with its known
 working settings and compare the same scene before trying these features. The subsequent

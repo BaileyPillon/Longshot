@@ -16,6 +16,7 @@
 #   published with GITHUB_TOKEN starts no workflow, so the Promote run's own record job is the one for those.
 # - rc: after either publish, and for a release published by hand, the rc prerelease gets the newest release candidate's
 #   or release's AppImage and .zsync (the rc job), for the update information of release candidates' AppImages.
+# The Longshot preview uses a manual release draft. AUTO_RELEASE and AUTO_PUBLISH_RELEASE opt in to automation.
 # No game data is involved.
 name: Release
 
@@ -47,7 +48,7 @@ concurrency:
 
 jobs:
   release-please:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && vars.AUTO_RELEASE == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # (one at a time, in order; only this job, so the builds of a release never hold up the next push. A push that waits
@@ -75,7 +76,7 @@ jobs:
   # the release candidates' notes, scripts/release_promote.sh)
   # (one at a time: the workflow's concurrency group, which covers the whole run)
   promote:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.AUTO_RELEASE == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # (the tag and the draft release; actions: read, the other Promote runs in progress)
@@ -166,7 +167,7 @@ jobs:
           subject-path: SHA256SUMS
       # (by the release's id: a draft is not found by its tag)
       - name: Publish the release
-        if: env.WINDOWS_BY_HAND != 'true'
+        if: env.WINDOWS_BY_HAND != 'true' && vars.AUTO_PUBLISH_RELEASE == 'true'
         run: scripts/release_files.sh publish "$TAG"
 
   # rc, the latest release candidate (scripts/release_rc.sh): a rolling prerelease, never "latest", holding the Linux

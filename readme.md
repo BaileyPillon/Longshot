@@ -1,8 +1,9 @@
-> **Longshot development fork:** the `feat/fork-feature-integration` branch combines the Hookshot v2.2.0-rc.1 foundation
+> **Longshot Windows preview** builds on the Hookshot v2.2.0-rc.1 foundation
 > with a launcher/checkpoint browser, save profiles and verified imports, an adjustable FPS display, a mod manager,
 > optional co-op, a randomizer, a completion tracker and an original live Adventure Journal with personal waypoints.
+> Download the [Windows preview](https://github.com/BaileyPillon/Longshot/releases) and follow the [start guide](docs/longshot-preview.md).
 > Read [features and setup](docs/longshot-features.md), [the fork research](docs/longshot-fork-research.md), and
-> [validation and pending gameplay checks](docs/longshot-validation.md). This is not a tested replacement for a stable play installation.
+> [validation and pending gameplay checks](docs/longshot-validation.md). Use a separate folder and a copied save for preview play.
 > See the [ranked player-facing feature roadmap](docs/longshot-player-roadmap.md) for the item wheel, live companion,
 > in-game checkpoints and other requested additions, with their current implementation status.
 

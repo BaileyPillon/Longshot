@@ -4,7 +4,7 @@ and the play profile (addresses and counts made on the development PC).
 
     python -I scripts/release_parts.py previous <out list> --repo <owner/name> [--repo ...] [--skip-tag <tag>]
         the newest stable release's hookshot-setup.txt (of the first repository that has one; not --skip-tag's, the release
-        being made); prints that release's tag. Exits 1 when no repository has one.
+        being made). An optional --bootstrap-url and --bootstrap-sha256 pin the fallback manifest.
     python -I scripts/release_parts.py profile <setup list> <work folder>
         the play profile (tools/work of the list's app part) into <work folder>
     python -I scripts/release_parts.py llvm-mingw <folder> [--name]
@@ -12,6 +12,7 @@ and the play profile (addresses and counts made on the development PC).
         prints its folder. --name: only prints its name (a cache key)
     python -I scripts/release_parts.py package <out folder> --publish <dotnet publish folder> --setup <setup exe>
                                        [--list <setup list>] [--python-packages <requirements>] [--cpm-add <CPM folder>]
+                                       [--include-tk]
         the package folder make_setup_parts.py splits: the published builder, the setup, LICENSE, the tracked gpu, host, nx2
         and scripts under tools/, the pipeline state list's sources (assets/pipeline_states/, which must be there and read),
         tools/work (the profile) and tools/third_party: the tracked files and, from the list's
@@ -87,6 +88,15 @@ def previous(a):
                     f.write(get(url))
                 print(r["tag_name"])
                 return 0
+    if a.bootstrap_url:
+        data = get(a.bootstrap_url)
+        if hashlib.sha256(data).hexdigest() != a.bootstrap_sha256:
+            print("bootstrap setup list SHA-256 mismatch", file=sys.stderr)
+            return 1
+        with open(a.out, "wb") as f:
+            f.write(data)
+        print("using pinned upstream setup list", file=sys.stderr)
+        return 0
     print("no release with a hookshot-setup.txt in %s" % ", ".join(a.repo), file=sys.stderr)
     return 1
 
@@ -213,10 +223,33 @@ def package(a):
             return 1
     else:
         print("no setup list: the package has no play profile and no prebuilt third_party files")
+    if a.include_tk:
+        python_dir = os.path.join(tools, "python")
+        if not os.path.isdir(python_dir):
+            extract(named_part(a.list, "python"), "HookshotBuilder/tools/python/", python_dir)
+        include_tk(python_dir)
     if state_list(tools) != 0:
         return 1
     print("package folder: %s" % out)
     return 0
+
+
+def include_tk(python_dir):
+    # The upstream bundle omits Tk's Python package and Tcl library scripts.
+    source = sys.base_prefix
+    python = os.path.join(python_dir, "python.exe")
+    release = subprocess.check_output(
+        [python, "-I", "-B", "-c", "import sys; print(sys.version.split()[0])"], text=True,
+    ).strip()
+    if release != sys.version.split()[0]:
+        raise ValueError("The bundled Python and the Tcl/Tk source must use the same CPython release")
+    for section in ("tcl", os.path.join("Lib", "tkinter")):
+        shutil.copytree(os.path.join(source, section), os.path.join(python_dir, section),
+                        dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__"))
+    for name in os.listdir(os.path.join(source, "DLLs")):
+        if name.lower().startswith(("tcl", "tk", "_tkinter")):
+            copy(os.path.join(source, "DLLs", name), os.path.join(python_dir, "DLLs", name))
+    subprocess.run([python, "-I", "-B", "-c", "import tkinter; tkinter.Tcl()"], check=True)
 
 
 def state_list(tools):
@@ -300,6 +333,8 @@ def main():
     s.add_argument("out")
     s.add_argument("--repo", action="append", required=True)
     s.add_argument("--skip-tag", default="")
+    s.add_argument("--bootstrap-url")
+    s.add_argument("--bootstrap-sha256")
     s = sub.add_parser("profile")
     s.add_argument("list")
     s.add_argument("work")
@@ -313,7 +348,10 @@ def main():
     s.add_argument("--list")
     s.add_argument("--python-packages")
     s.add_argument("--cpm-add")
+    s.add_argument("--include-tk", action="store_true")
     a = p.parse_args()
+    if a.cmd == "previous" and bool(a.bootstrap_url) != bool(a.bootstrap_sha256):
+        p.error("--bootstrap-url and --bootstrap-sha256 must be supplied together")
     return {"previous": previous, "profile": profile, "llvm-mingw": llvm_mingw, "package": package}[a.cmd](a)
 
 

@@ -319,6 +319,33 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
+    void PlayerToolsClick(object sender, RoutedEventArgs e)
+    {
+        var tools = Tools.Find();
+        var game = launchFolder.Length > 0 ? launchFolder : finished;
+        try
+        {
+            if (tools == null || game.Length == 0)
+                throw new FileNotFoundException("Build the game before opening Player tools.");
+            var script = System.IO.Path.Combine(tools.Root, "scripts", "longshot_launcher.py");
+            if (!File.Exists(script))
+                throw new FileNotFoundException("The Longshot launcher is missing. Repair Longshot Builder and try again.");
+            var start = new ProcessStartInfo(tools.Python)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = game
+            };
+            foreach (var argument in (tools.PythonArgs ?? Array.Empty<string>()).Concat(new[] { "-I", script, "--game", game }))
+                start.ArgumentList.Add(argument);
+            Process.Start(start);
+        }
+        catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception)
+        {
+            MessageBox.Show(this, error.Message, "Longshot Player tools", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     void LaunchFolderClick(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo(launchFolder) { UseShellExecute = true });
 
@@ -1370,7 +1397,7 @@ public partial class MainWindow : Window
             Application.Current.Shutdown();
             return;
         }
-        Process.Start(new ProcessStartInfo("https://github.com/NotRexed/Hookshot/releases/latest") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("https://github.com/BaileyPillon/Longshot/releases") { UseShellExecute = true });
     }
 
     // ================= the update (Updater.cs): the game started this app with --update <folder> =================

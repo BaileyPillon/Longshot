@@ -72,7 +72,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.12'
+          python-version: '3.14.7'
       - name: Set up .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
@@ -105,19 +105,18 @@ jobs:
           echo "version: $tag"
 
       # (the list of the newest stable release other than this tag: its Python, emsdk, CPM, wgpu-native and third_party
-      # parts and its play profile. A fork with no release takes upstream's. A release must have one; any other run goes
-      # on without, and its package lacks those parts)
+      # parts and its play profile. A fork without a stable release uses a pinned official Forgejo manifest.)
       - name: The latest release's setup list
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if python -I scripts/release_parts.py previous "$RUNNER_TEMP/previous-setup.txt" \
-              --repo "$GITHUB_REPOSITORY" --repo NotRexed/Hookshot --skip-tag "$TAG"; then
+              --repo "$GITHUB_REPOSITORY" --skip-tag "$TAG" \
+              --bootstrap-url https://git.notrexed.dev/Hookshot/Hookshot/releases/download/v2.2.0-rc.1/hookshot-setup.txt \
+              --bootstrap-sha256 f5dbeba47a3dbcf5170a51f8d7206f5aa64e86b2e7ca548f0e7d47ea01d51725; then
             echo "PREVIOUS=$RUNNER_TEMP/previous-setup.txt" >> "$GITHUB_ENV"
-          elif [[ -n $RELEASE_TAG ]]; then
-            exit 1
           else
-            echo "::warning::no earlier release's setup list: the package has only the app and .NET parts"
+            exit 1
           fi
 
       # (work/hookshot.ico is the builder's icon, builder/HookshotBuilder/HookshotBuilder.csproj)
@@ -155,7 +154,7 @@ jobs:
         run: >-
           python -I scripts/release_parts.py package "$RUNNER_TEMP/package"
           --publish "$RUNNER_TEMP/publish" --setup "$RUNNER_TEMP/HookshotBuilder-Setup.exe"
-          ${PREVIOUS:+--list "$PREVIOUS" --python-packages nx2/prompt_requirements.txt --cpm-add "$RUNNER_TEMP/dav1d-cpm"}
+          ${PREVIOUS:+--list "$PREVIOUS" --python-packages nx2/prompt_requirements.txt --include-tk --cpm-add "$RUNNER_TEMP/dav1d-cpm"}
 
       - name: Setup parts
         run: |
@@ -346,7 +345,7 @@ jobs:
     if: >-
       ((inputs.tag != '' || (startsWith(github.ref, 'refs/tags/') && github.ref_name != 'builder-parts'
       && github.ref_name != 'nightly' && github.ref_name != 'rc')) && vars.CI_RELEASE_WINDOWS != 'false')
-      || (!inputs.tag && github.event_name == 'push' && github.ref == 'refs/heads/main')
+      || (!inputs.tag && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_NIGHTLY == 'true')
     needs: [package, vulkan]
     runs-on: ubuntu-24.04
     timeout-minutes: 15

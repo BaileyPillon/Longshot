@@ -63,18 +63,21 @@ class Launcher:
         self.profile_text = tk.StringVar()
         ttk.Label(play, textvariable=self.profile_text, wraplength=860).pack(anchor="w", pady=(0, 20))
         ttk.Label(play, text="Tools", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 8))
+        source_companions = companions.MANIFEST.is_file()
         for label, explanation, callback in (
             ("Manage mods", "Save named loadouts, preview conflicts, switch setups and undo.", self.mods),
             ("Completion tracker", "Read this profile's saves. Build the tracker once with the companion tool.", lambda: self.companion("tracker")),
             ("Co-op party…", "Host or join a party, choose a tunic color and use a separate profile.", self.coop),
             ("Randomized adventure…", "Pick a preset, share a seed recipe, or set up Archipelago multiworld.", self.adventure),
             ("Randomizer", "Generate a separate seed and playthrough. Some seeds may be unbeatable.", lambda: self.companion("randomizer"))):
+            if not source_companions and callback != self.mods:
+                continue
             row = ttk.Frame(play)
             row.pack(fill="x", pady=7)
             self.button(row, label, callback, width=23).pack(side="left")
             ttk.Label(row, text=explanation, wraplength=600).pack(side="left", padx=16)
         ttk.Label(play, text="Graphics and controller settings stay in the game’s Insert menu.\n"
-                  "This launcher uses the profile selected above. Co-op and inherited randomizer overlays are off for ordinary play.",
+                  "The selected profile controls which saves the game uses.",
                   wraplength=850).pack(anchor="w", pady=24)
         ttk.Label(saves, text="Native saves", font=("Segoe UI", 13, "bold")).pack(anchor="w")
         ttk.Label(saves, text="Save in the game and close it before transferring or capturing saves. A ZIP contains every completed slot in the selected account.",

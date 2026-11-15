@@ -4,7 +4,7 @@
     python -I nx2/make_game.py --romfs <dir> --exefs <dir> --out <folder> [--work <folder>] [--jobs <n>]
     python -I nx2/make_game.py --check --nup <file.nup>       (or --exefs <dir>: is this the right game and version?)
     python -I nx2/make_game.py --update <folder>             (a folder built before, again with these tools: the game files it keeps)
-    python -I nx2/make_game.py --game <.nup or folder> --prepare   (RecompLauncher: --out defaults to ~/Games/Hookshot; no window,
+    python -I nx2/make_game.py --game <.nup or folder> --prepare   (RecompLauncher: --out defaults to ~/Games/Longshot; no window,
                                                                     "progress <0..1> <text>" lines and an "error <text>" line on stdout,
                                                                     exit 0 when the game is built; with --check, its "check ok|bad" line)
 
@@ -125,7 +125,7 @@ def check_writable(out):
                      for d in protected)
         where = (" Windows protects folders under Program Files and Windows, and only lets administrators write there."
                  if inside and isinstance(e, PermissionError) else "")
-        example = "~/Games/Hookshot" if LINUX else r"C:\Games\Hookshot"
+        example = "~/Games/Longshot" if LINUX else r"C:\Games\Hookshot"
         fail("The game folder %s can't be written to (%s).%s In Hookshot Builder, choose a game folder of your own, for example "
              "%s, and build again." % (out, e.strerror or e, where, example))
 
@@ -1981,14 +1981,14 @@ def parse_args():
     p.add_argument("--work", default=os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
                                                   "hookshot-builder-windows" if CROSS else "hookshot-builder")   # (the objects apart)
                    if os.name != "nt" else os.environ.get("HOOKSHOT_SETUP_BASE") or
-                   os.path.join(os.environ.get("LOCALAPPDATA", ROOT), "HookshotBuilder"))
+                   os.path.join(os.environ.get("LOCALAPPDATA", ROOT), "LongshotBuilder"))
     # (HOOKSHOT_JOBS: fewer compilers on a PC short of memory; the AppImage's builds pass no --jobs)
     p.add_argument("--jobs", type=int)
     p.add_argument("--language", help="the game's language: a code from LANGUAGES, written to language.txt. Not given: the one the "
                                       "folder has; else the system's with --prepare; else en-US")
     p.add_argument("--check", action="store_true")
     p.add_argument("--game", help="your copy: a .nup file, or a folder with romfs and exefs in it (the same as --nup, or --romfs and --exefs)")
-    p.add_argument("--prepare", action="store_true", help="for RecompLauncher: no window, progress lines, --out ~/Games/Hookshot unless given")
+    p.add_argument("--prepare", action="store_true", help="for RecompLauncher: no window, progress lines, --out ~/Games/Longshot unless given")
     p.add_argument("--update", help="a game folder built before: built again from the game files it keeps (the game's update offer)")
     p.add_argument("--no-prepare-shaders", action="store_true",
                    help="leave the shaders' preparation to the game's first start (the builder's \"Prepare shaders now\" unticked)")
@@ -2006,9 +2006,9 @@ def parse_args():
     if a.prepare:   # (first: a bad --game below is said as RecompLauncher's "error" line)
         global PREPARE
         PREPARE = True
-        a.out = a.out or (os.path.join(os.path.dirname(os.environ["HOOKSHOT_SETUP_BASE"]), "Hookshot")
+        a.out = a.out or (os.path.join(os.path.dirname(os.environ["HOOKSHOT_SETUP_BASE"]), "Longshot")
                           if os.name == "nt" and os.environ.get("HOOKSHOT_BUILDER_PORTABLE") == "1" and
-                          os.environ.get("HOOKSHOT_SETUP_BASE") else os.path.join(os.path.expanduser("~"), "Games", "Hookshot"))
+                          os.environ.get("HOOKSHOT_SETUP_BASE") else os.path.join(os.path.expanduser("~"), "Games", "Longshot"))
     if a.game:   # (a path from a launcher: said plainly before any folder is made, not as a traceback halfway in)
         if os.path.isdir(a.game):
             a.romfs, a.exefs = os.path.join(a.game, "romfs"), os.path.join(a.game, "exefs")
