@@ -1,0 +1,29 @@
+--- a/src/oot_rando/gui/randomizer_gui.py
++++ b/src/oot_rando/gui/randomizer_gui.py
+@@ -207,8 +207,25 @@
+         if self.check_updates.get():
+             root.after(2500, lambda: self.check_for_updates(silent=True))
+         root.after(1800, self.tracker_tick)
+-        root.after(50, self.restore_last_artifact)
++        if os.environ.get('LONGSHOT_OOTRR_GAME') and os.environ.get('LONGSHOT_ADVENTURE_PRESET'):
++            root.after(50, self.longshot_adventure)
++        else:
++            root.after(50, self.restore_last_artifact)
+         root.after(60, self.start_turbo)
+ 
++    def longshot_adventure(self):
++        # A recipe is only a setup request. Never generate, install or connect automatically.
++        import re
++        preset = os.environ.get('LONGSHOT_ADVENTURE_PRESET', '')
++        seed = os.environ.get('LONGSHOT_ADVENTURE_SEED', '')
++        page = os.environ.get('LONGSHOT_ADVENTURE_PAGE', 'settings')
++        if preset not in rando_options.PRESETS or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', seed):
++            self.error(ValueError('Invalid Longshot adventure recipe'))
++            return
++        self.apply_full(rando_options.preset(preset), enable=True)
++        self.seed.set(seed)
++        self.show_page('multiworld' if page == 'multiworld' else 'settings')
++        self.status.set('Longshot recipe loaded. Review settings before generating; no seed installed.')
++
+     def configure_theme(self):
+         self.colors = dict(theme.COLORS, bg=theme.COLORS['surface'], accent=theme.COLORS['green'])

@@ -1,5 +1,7 @@
 """Authored Python-part fixtures: the prompt encoder's dependency must be bundled without pip dependency resolution."""
+from argparse import Namespace
 from contextlib import redirect_stdout
+import hashlib
 import importlib.util
 import io
 from pathlib import Path
@@ -67,6 +69,21 @@ class PromptPackages(unittest.TestCase):
         self.assertEqual(pip.call_args.kwargs, {"check": True})
         extracted.assert_called_once()
         self.assertEqual((self.tools / "python/python314.dll").read_bytes(), b"authored version marker")
+
+    def test_bootstrap_verifies_manifest_before_writing_it(self):
+        data = b"tag v2.2.0-rc.1\n"
+        output = self.tools.parent / "setup.txt"
+        url = "https://example.invalid/setup.txt"
+        args = Namespace(out=output, repo=[], skip_tag="", bootstrap_url=url,
+                         bootstrap_sha256="0" * 64)
+        with patch.object(release_parts, "get", return_value=data) as download:
+            self.assertEqual(release_parts.previous(args), 1)
+            self.assertFalse(output.exists())
+            args.bootstrap_sha256 = hashlib.sha256(data).hexdigest()
+            self.assertEqual(release_parts.previous(args), 0)
+            self.assertEqual(output.read_bytes(), data)
+        self.assertEqual(download.call_count, 2)
+        download.assert_called_with(url)
 
     def test_complete_python_part_is_reused_without_pip_or_extraction(self):
         self.python_part(self.pins)

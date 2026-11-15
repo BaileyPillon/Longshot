@@ -31,6 +31,8 @@ with tempfile.TemporaryDirectory(prefix="shader-stamp-bank-") as tmp:
     first = stamp()
     (vk / "vk_draw.cpp").write_bytes(b"unrelated renderer edit\n")
     assert stamp() == first, "unrelated renderer source entered shader stamp"
+    (vk / "vk_api.h").write_bytes(b"enum { NEW_MENU_OPTION = 1 };\n")
+    assert stamp() == first, "a menu option should not invalidate translated shaders"
     (vk / "vk_bank.cpp").write_bytes(b"changed bank semantics\n")
     changed = stamp()
     assert changed != first, "bank-only edit did not invalidate shader stamp"

@@ -44,6 +44,15 @@ def not_prepared(lines):
 
 
 class PrepareShadersTests(unittest.TestCase):
+    def test_preview_prefers_on_demand_without_replacing_an_existing_config(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "hookshot_env.txt"
+            self.assertTrue(make_game.preview_shaders_on_demand(folder))
+            self.assertEqual(path.read_text(encoding="utf-8"), "RX_VK_PRECOMPILE=0\n")
+            path.write_text("RX_VK_PRECOMPILE=1\n", encoding="utf-8")
+            self.assertFalse(make_game.preview_shaders_on_demand(folder))
+            self.assertEqual(path.read_text(encoding="utf-8"), "RX_VK_PRECOMPILE=1\n")
+
     def test_progress_goes_on_and_the_games_done_does_not(self):
         code, lines = prepared(stub("print('hookshot v'); print('@@stage shaders Preparing shaders'); print('@@progress 0.500');"
                                     "print('@@done shaders')"))

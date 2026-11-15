@@ -13,6 +13,9 @@
    and hands it to the focus manager (*(screen+32)+96, its vtable +48), when the manager takes the player's input.
    HOS_MENU_TRACE=1: the focus changes, the screens and what the mouse does logged. */
 #include "hos.h"
+#ifndef HOOKSHOT_ENV_H   /* (env_on: the switches' one rule) */
+#include "../gpu/vk/compat/hookshot_env.h"
+#endif
 #if defined(_WIN32)
 #include <windows.h>
 #include <ctype.h>
@@ -20,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../gpu/vk/vk_api.h"   /* (HOS_MOUSE_*) */
+#include "../gpu/vk/longshot_photo_options.h"
 
 /* A guest read, of the pointers the game's objects hold: inside the guest's space (below 1 MB: a null pointer's), it is
    read as the lifted code reads it; a page there not committed yet is committed on the touch (mkw_glue.c
@@ -161,7 +165,7 @@ static struct { uint64_t screen, pane, lr; int set; } pending;
 static void focus_locked(uint64_t screen, uint64_t pane, uint64_t lr);
 void hos_oot_menu_focus(Ctx *c, uint64_t screen, uint64_t pane, uint64_t lr) {
     (void)c;
-    if (trace < 0) trace = getenv("HOS_MENU_TRACE") != NULL;
+    if (trace < 0) trace = env_on("HOS_MENU_TRACE");
     if (mouse_owner == GetCurrentThreadId()) {   /* (inside mouse_tick's setter, on its thread: the lock is this thread's) */
         focus_locked(screen, pane, lr);
         return;
@@ -366,7 +370,10 @@ static void item_choice_tick(void) {
 }
 
 static void mouse_tick_locked(Ctx *c, uint64_t screen) {
+    /* a left press on a panel page, its click at the release (below) */
+    static int ldown, ldrag, lx0, ly0, llx, lly;
     if (peek64(screen) == ITEM_CHOICE_VTABLE) {
+        ldown = ldrag = 0;
         item_choice_tick();
         return;
     }
@@ -374,7 +381,10 @@ static void mouse_tick_locked(Ctx *c, uint64_t screen) {
     int px, py, w, h, wheel;
     uint32_t pressed;
     const int got = hos_mouse_game_pointer(&px, &py, &w, &h, &pressed, &wheel);
-    if (!got) return;
+    if (!got) {   /* (outside the window or under the Insert menu: a release there is not seen, so no click on return) */
+        ldown = ldrag = 0;
+        return;
+    }
     const int hidden = got == 2;   /* (the cursor hidden while the pad is in use: the wheel only, no pointing) */
     const int pause = screen == pause_screen_now();
     const float scale = 3840.0f / (float)w > 2160.0f / (float)h ? 3840.0f / (float)w : 2160.0f / (float)h;
@@ -393,7 +403,6 @@ static void mouse_tick_locked(Ctx *c, uint64_t screen) {
        Key Items' stones are): a drag there turns it, off the buttons; the page's slots at the left (to x about 100),
        the tabs above (y 900), the prompts below (-960) */
     const int item_model = pause && page_now == 2, pan = page >= 0 || item_model;
-    static int ldown, ldrag, lx0, ly0, llx, lly;
     if (pan) {
         const int held = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
         const int was_down = ldown;
@@ -755,10 +764,44 @@ static Seen *screen_seen(uint64_t screen, int64_t now) {
     return free_one;
 }
 
+/* Resolve PlayerStatusScreen through the game's UI lookup and RTTI. Only the
+   visual animation is changed; no persistent GameData or save flag is written. */
+static void longshot_status_hud(Ctx *c, uint64_t screen, int64_t now) {
+    int rx_option(int id,int otherwise);
+    int hos_longshot_hud_original(void);
+    static uint64_t target, target_vtable;
+    static int64_t next;
+    static int overridden, last=-2;
+    const int wanted=rx_option(HOS_OPT_STATUS_HUD,-1);
+    if (wanted<0 && !overridden) return;
+    if (now>=next) {
+        next=now+200000000LL;
+        const uint64_t manager=peek64(peek64(0x84c9e098ULL));
+        const uint64_t lookup=peek64(manager+0x48), type=peek64(0x84c9e770ULL);
+        uint32_t count=0; peek(manager+8,&count,4);
+        const uint64_t fn=peek64(peek64(lookup)+0x50);
+        target=0;
+        if (manager && lookup && type && fn && count && count<4096) {
+            const uint64_t index=guest_call(c,fn,lookup,0x5c7f1c3cu,NULL,NULL);
+            const uint64_t object=index<count ? peek64(peek64(manager+0x10)+index*8) : 0;
+            if (object) target=guest_call(c,peek64(peek64(object)+0x10),object,type,NULL,NULL);
+        }
+        target_vtable=peek64(target);
+    }
+    if (!target || screen!=target || peek64(screen)!=target_vtable) return;
+    const int value=wanted<0 ? hos_longshot_hud_original() : wanted;
+    if (value!=last || overridden!=(wanted>=0)) {
+        guest_call(c,0x802eef00ULL,screen,(uint64_t)value,NULL,NULL);
+        last=value;
+        overridden=wanted>=0;
+        hos_log("longshot: status HUD %s%s",value?"shown":"hidden",overridden?" (temporary)":" (restored)");
+    }
+}
 void hos_oot_menu_tick(Ctx *c, uint64_t screen) {
     if (!screen) return;
-    if (trace < 0) trace = getenv("HOS_MENU_TRACE") != NULL;
+    if (trace < 0) trace = env_on("HOS_MENU_TRACE");
     const int64_t now = hos_now_ns();
+    longshot_status_hud(c,screen,now);
     AcquireSRWLockExclusive(&seen_lock);
     Seen *me = screen_seen(screen, now);
     if (!me->running) {
@@ -812,6 +855,11 @@ void hos_oot_menu_tick(Ctx *c, uint64_t screen) {
     if (screen == pause_screen_now()) InterlockedIncrement(&ticks);
 }
 #else
-void hos_oot_menu_focus(Ctx *c, uint64_t screen, uint64_t pane, uint64_t lr) { (void)c, (void)screen, (void)pane, (void)lr; }
+void hos_input_clear_toggles(void);
+/* The pause page's focus hook also runs on Linux, even without mouse menu navigation. */
+void hos_oot_menu_focus(Ctx *c, uint64_t screen, uint64_t pane, uint64_t lr) {
+    (void)c, (void)screen, (void)pane, (void)lr;
+    hos_input_clear_toggles();
+}
 void hos_oot_menu_tick(Ctx *c, uint64_t screen) { (void)c, (void)screen; }
 #endif
