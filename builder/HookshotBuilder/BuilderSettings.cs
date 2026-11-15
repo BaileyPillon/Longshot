@@ -22,6 +22,6 @@ sealed class BuilderSettings
     }
 
     /// (the updates, from the launcher's Update and from the --update start after a self-update, begin before ApplySettings sets
-    /// the tick from these settings: they read the saved choice itself. None saved: prepared, as the tick's default)
-    public static bool PrepareNow(string path) => Load(path)?.PrepareLater != true;
+    /// the tick from these settings: they read the saved choice itself. None saved: on-demand, as the tick's default)
+    public static bool PrepareNow(string path) => Load(path)?.PrepareLater == false;
 }

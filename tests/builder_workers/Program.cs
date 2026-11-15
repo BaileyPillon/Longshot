@@ -55,11 +55,11 @@ static class Program
     static void ShaderStepChecks(string root)
     {
         var settings = Path.Combine(root, "builder-settings.json");
-        Require(BuilderSettings.PrepareNow(settings), "No saved settings must prepare the shaders, as the tick's default.");
+        Require(!BuilderSettings.PrepareNow(settings), "Fresh preview settings compile shaders on demand.");
         File.WriteAllText(settings, "not json");
-        Require(BuilderSettings.PrepareNow(settings), "Unreadable settings must prepare the shaders.");
+        Require(!BuilderSettings.PrepareNow(settings), "Unreadable settings use the preview default.");
         File.WriteAllText(settings, """{"Out":"authored output","PrepareLater":true}""");
-        Require(!BuilderSettings.PrepareNow(settings), "A saved unticked choice must leave the shaders to the first start.");
+        Require(!BuilderSettings.PrepareNow(settings), "A saved unticked choice must skip the full shader pass.");
         Require(ShaderStep.Args(new List<string> { "--update", "authored game" }, BuilderSettings.PrepareNow(settings))
                 .SequenceEqual(new[] { "--update", "authored game", "--no-prepare-shaders" }), "The update ignored the saved choice.");
         File.WriteAllText(settings, """{"Out":"authored output","PrepareLater":false}""");

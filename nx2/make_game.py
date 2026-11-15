@@ -1330,6 +1330,16 @@ def not_prepared(why):
     print("%s (%s): the game prepares them at its first start" % (NOT_PREPARED, why), flush=True)
 
 
+def preview_shaders_on_demand(out):
+    """Set the new Windows preview folder's first-run mode without overwriting an existing configuration."""
+    try:
+        with open(os.path.join(out, "hookshot_env.txt"), "x", encoding="utf-8", newline="\n") as stream:
+            stream.write("RX_VK_PRECOMPILE=0\n")
+    except FileExistsError:
+        return False
+    return True
+
+
 def prepare_skipped(a, environ=None):
     """Why the build leaves the shaders to the first start, or None: it prepares them"""
     environ = os.environ if environ is None else environ
@@ -2482,6 +2492,8 @@ def main(a=None):
                 tag = f.readline().strip()
             if tag:
                 break
+    on_demand = bool(tag and launcher and os.name == "nt" and not a.update
+                     and a.no_prepare_shaders and preview_shaders_on_demand(out))
     if tag:
         write_game_home(out, portable_home)
         with open(os.path.join(out, "hookshot_version.txt"), "w", encoding="utf-8", newline="\n") as f:
@@ -2524,7 +2536,9 @@ def main(a=None):
     say("times", "%.0f" % total_seconds, "%.0f" % compile_seconds, "-1" if previous is None else "%.0f" % previous)
     # (after the times: they stay comparable from build to build, without a GPU's minutes that can be switched off)
     skipped = prepare_skipped(a)
-    if skipped:
+    if on_demand:
+        print("The Windows preview will compile shaders as you play.", flush=True)
+    elif skipped:
         not_prepared(skipped)
     else:
         prepare_shaders([os.path.join(game_dir, BESIDE[0]), "--prepare-shaders"], out)

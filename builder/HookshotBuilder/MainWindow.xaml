@@ -194,10 +194,9 @@
                         AutomationProperties.Name="Update track" AutomationProperties.LabeledBy="{Binding ElementName=TrackLabel}"
                         ToolTip="Release: the tested versions. Release candidate: the next version, to try before it is released. Nightly: the newest development build, updated with every change."/>
             </StackPanel>
-            <!-- (make_game.py's last step, the game's prepare-shaders run: unticked, the game prepares them at its first start) -->
             <CheckBox x:Name="PrepareTick" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3" Style="{StaticResource Tick}" Content="Prepare shaders now"
-                      IsChecked="True" Margin="0,12,0,0"
-                      ToolTip="Prepares the game's shaders at the end of the build, a few minutes (longer on some GPUs). Unticked, the game prepares them at its first start, behind a black window."/>
+                      IsChecked="False" Margin="0,12,0,0"
+                      ToolTip="Prepares all shaders after building. On a fresh install, leave this off to compile shaders as you play. An area may briefly stutter on its first visit."/>
           </Grid>
 
           <!-- NVIDIA DLSS: off unless ticked. Ticking it shows NVIDIA's license; the build downloads NVIDIA's SDK under it

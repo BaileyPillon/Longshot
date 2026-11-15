@@ -11,7 +11,9 @@
    To bring in existing progress, close the game, then import a copied save folder or save ZIP into a new profile.
    Keep the source save as your backup.
 
-Initial shader preparation can take time. Start with frame generation and HDR off.
+The Windows preview compiles shaders as you play by default. Expect brief stutters when you visit an area for the first time.
+Select **Prepare shaders now** during setup if you prefer to wait for the full shader pass before playing.
+Start with frame generation and HDR off.
 Linux builds, multiplayer and multiworld are outside the Windows preview. Optional companion setup remains in the source guide.
 
 Report problems in [Longshot Issues](https://github.com/BaileyPillon/Longshot/issues) with the exact preview tag,

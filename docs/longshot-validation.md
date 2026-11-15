@@ -1,5 +1,21 @@
 # Longshot integration validation — 13 November 2026
 
+
+## 15 November Windows preview
+
+- Installed the Windows Builder into an empty portable test home from a staged copy of the checksummed setup package.
+  It recognized the supported 1.1.1 dump and built the game from scratch. The original Hookshot binaries, settings,
+  shortcuts and saves matched 22 recorded hashes.
+- Full first-start shader preparation reached 218 of 38,809 programs before we closed it. With on-demand shader
+  compilation, the game loaded the Great Deku Tree B2 copy. The native F5 menu captured it and resumed the game.
+  Clicking the checkpoint and confirming restored it into unused profile 4 and returned to the same scene.
+  The portable save ZIP also round-tripped byte-for-byte into a separate profile.
+- Stereo output opened and the game logged nonzero audio samples. DualSense input still needs a physical test.
+  At 1280×720 with HDR and frame generation off, 18 stationary gameplay samples averaged 59.2 FPS in the Deku Tree.
+  The first Market visit averaged 49.8 FPS across 30 readings, including shader stalls. This is a first-visit sample.
+- Local Windows source suite: 530 checks passed, 35 skipped, zero failed. Release scripts passed 34 Linux fixtures.
+  Fresh GitHub Actions runs were unavailable because GitHub rejected dispatches with HTTP 422.
+
 ## 14 November save exchange and mod import
 
 - The Longshot launcher exported a copied Deku Tree account into a verified ZIP and restored its four native
