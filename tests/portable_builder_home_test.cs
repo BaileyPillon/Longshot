@@ -49,7 +49,7 @@ static class Program
         Check(BuilderHome.Base == root && BuilderHome.Portable, "Actual process context chose another home.");
         Check(Storage.Base == root && Storage.NgxSdk == Path.Combine(root, "ngx-sdk") && Storage.FfxSdk == Path.Combine(root, "ffx-sdk"), "Storage/SDKs escaped the home.");
         Check(Storage.Work == root, "Default work escaped the home.");
-        Check(BuilderHome.DefaultGame == Path.Combine(volume, "Hookshot"), "Default game escaped the portable volume.");
+        Check(BuilderHome.DefaultGame == Path.Combine(volume, "Longshot"), "Default game escaped the portable volume.");
         var child = new ProcessStartInfo("authored-child-never-started");
         child.Environment["HOOKSHOT_SETUP_BASE"] = Path.Combine(fixture, "stale unrelated home");
         child.Environment["HOOKSHOT_BUILDER_PORTABLE"] = "0";

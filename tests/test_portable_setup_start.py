@@ -102,7 +102,7 @@ int wmain(int argc, wchar_t **argv) {
                         "-municode", "-I" + str(ROOT / "builder/setup"), str(c), "-o", str(exe)], check=True)
         tree = root / "Portable ü, tree"
         tree.mkdir()
-        home = tree / "HookshotBuilder"
+        home = tree / "LongshotBuilder"
         profile = root / "authored AppData"
         setup = tree / "Setup.exe"
         import os
@@ -130,16 +130,16 @@ int wmain(int argc, wchar_t **argv) {
         run(root / "downloaded-setup.exe", home, 0, {"HOOKSHOT_SETUP_BASE": str(home), "HOOKSHOT_BUILDER_PORTABLE": "1"})
         game = tree / "Game"
         game.mkdir()
-        (game / ".hookshot_builder_home").write_text("../HookshotBuilder", encoding="utf-8")
+        (game / ".hookshot_builder_home").write_text("../LongshotBuilder", encoding="utf-8")
         (game / "hookshot_version.txt").write_text("version=v-authored\nbuilder_local=1\n")
         run(game / "hookshot.exe", home, 0)
         moved = root / "Relocated ü, tree"
         tree.rename(moved)
-        home, game = moved / "HookshotBuilder", moved / "Game"
+        home, game = moved / "LongshotBuilder", moved / "Game"
         run(game / "hookshot.exe", home, 0)
         (game / ".hookshot_builder_home").unlink()
         run(game / "hookshot.exe", home, 2)
-        run(root / "standard-setup.exe", profile / "HookshotBuilder", 3)
+        run(root / "standard-setup.exe", profile / "LongshotBuilder", 3)
         run(root / "downloaded-setup.exe", home, 2, {"HOOKSHOT_SETUP_BASE": "relative"})
         run(root / "downloaded-setup.exe", home, 2, {"HOOKSHOT_SETUP_BASE": str(profile), "HOOKSHOT_BUILDER_PORTABLE": "1"})
         readonly = root / "write-protected fixture"
